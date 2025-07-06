@@ -67,3 +67,14 @@ integration_logs/
 
 # SPM Packages
 Packages/ 
+
+# Other
+*.swp
+*.lock
+*.orig
+*.old
+*.bak
+*.tmp
+*.temp
+*.log
+*.env
