@@ -1,0 +1,77 @@
+---
+description: useful for any modification of ContextManager
+globs: 
+alwaysApply: false
+---
+# ContextManager Architecture Rule
+
+## Core Principle
+The [ContextManager.swift](mdc:Flitro/ContextManager.swift) must remain completely independent of UI code and should never import SwiftUI or any UI-related frameworks.
+
+## Allowed Imports
+ContextManager should only import:
+- `Foundation` - For basic data types, file operations, and system APIs
+- `AppKit` - For workspace management and application control (system-level operations only)
+
+## Forbidden Imports
+ContextManager must NEVER import:
+- `SwiftUI` - UI framework
+- Any custom UI components or views
+- Any UI-related extensions or utilities
+
+## Data Models
+All data models in ContextManager should be:
+- Pure Swift structs with `Codable`, `Equatable`, and `Hashable` conformance
+- Independent of any UI representation
+- Serializable to JSON for persistence
+- No references to SwiftUI types like `Color`, `Font`, or view modifiers
+
+## ObservableObject Pattern
+- ContextManager can use `@Published` properties for reactive updates
+- UI components should observe ContextManager, not the other way around
+- No direct UI state management within ContextManager
+
+## Application Management
+- System-level operations only (launching apps, closing apps, file operations)
+- No UI-specific application state tracking
+- Use `NSWorkspace` for application control, not UI frameworks
+
+## Persistence
+- Use `FileManager` and `JSONEncoder`/`JSONDecoder` for data persistence
+- No UI-specific storage mechanisms
+- Keep file paths and data formats independent of UI representation
+
+## Testing
+- ContextManager should be testable without any UI dependencies
+- Mock data and test scenarios should not require UI setup
+- Unit tests should focus on business logic, not UI behavior
+
+## Violation Examples
+❌ DON'T:
+```swift
+import SwiftUI  // Forbidden in ContextManager
+struct Context {
+    var uiColor: Color  // UI-specific property
+    var font: Font      // UI-specific property
+}
+```
+
+✅ DO:
+```swift
+import Foundation
+import AppKit
+struct Context {
+    var name: String
+    var applications: [AppItem]
+    // Pure data, no UI references
+}
+```
+
+## Integration Pattern
+UI components should:
+1. Create a `@StateObject` or `@ObservedObject` ContextManager instance
+2. Subscribe to published properties for reactive updates
+3. Call ContextManager methods for business operations
+4. Handle UI-specific concerns separately from business logic
+
+This ensures ContextManager remains a pure business logic layer that can be reused across different UI implementations or even non-UI contexts.
