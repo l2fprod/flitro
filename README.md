@@ -20,7 +20,7 @@ Flitro is a macOS productivity app that lets you quickly switch between differen
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/Flitro.git
+   git clone https://github.com/l2fprod/Flitro.git
    cd Flitro
    ```
 2. Open `Flitro.xcodeproj` in Xcode.
