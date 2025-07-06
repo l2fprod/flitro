@@ -4,6 +4,12 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'Flitro/**'
+      - 'FlitroTests/**'
+      - 'FlitroUITests/**'
+      - 'Flitro.xcodeproj/**'
+      - '.github/workflows/build-and-notarize.sh'
 
 jobs:
   build-and-notarize:
