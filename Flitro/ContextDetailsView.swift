@@ -10,7 +10,6 @@ struct ContextDetailsView: View {
     @Binding var showAddDocumentDialog: Bool
     @Binding var showAddBrowserTabDialog: Bool
     @Binding var showAddTerminalDialog: Bool
-    var handleDocumentDrop: ([NSItemProvider], Int) -> Void
     
     @State private var isEditingTitle = false
     @State private var draftTitle = ""
@@ -55,10 +54,6 @@ struct ContextDetailsView: View {
                                 showAddDocumentDialog = true
                             }
                         )
-                        .onDrop(of: [.fileURL], isTargeted: nil) { providers in
-                            handleDocumentDrop(providers, contextIdx)
-                            return true
-                        }
                         .sheet(isPresented: $showAddDocumentDialog) {
                             AddDocumentDialog(
                                 onAdd: { newDoc in
@@ -240,4 +235,4 @@ struct ContextDetailsView: View {
             return Color.purple
         }
     }
-} 
+}

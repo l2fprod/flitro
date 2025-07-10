@@ -25,60 +25,6 @@ struct ContextEditorView: View {
         }
     }
     
-    private func handleDocumentDrop(providers: [NSItemProvider], contextIndex: Int) {
-        Task {
-            var addedDocuments: [DocumentItem] = []
-            
-            for provider in providers {
-                if let identifier = provider.registeredTypeIdentifiers.first,
-                   identifier == UTType.fileURL.identifier {
-                    if let item = try? await provider.loadItem(forTypeIdentifier: identifier, options: nil) {
-                        if let url = item as? URL {
-                            // Create security-scoped bookmark
-                            var bookmark: Data? = nil
-                            do {
-                                bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                            } catch {
-                                bookmark = nil
-                            }
-                            
-                            let document = DocumentItem(
-                                name: url.deletingPathExtension().lastPathComponent,
-                                filePath: url.path,
-                                application: "",
-                                bookmark: bookmark
-                            )
-                            addedDocuments.append(document)
-                        } else if let data = item as? Data,
-                                  let url = URL(dataRepresentation: data, relativeTo: nil) {
-                            // Create security-scoped bookmark
-                            var bookmark: Data? = nil
-                            do {
-                                bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                            } catch {
-                                bookmark = nil
-                            }
-                            
-                            let document = DocumentItem(
-                                name: url.deletingPathExtension().lastPathComponent,
-                                filePath: url.path,
-                                application: "",
-                                bookmark: bookmark
-                            )
-                            addedDocuments.append(document)
-                        }
-                    }
-                }
-            }
-            
-            // Add all documents to the context
-            if !addedDocuments.isEmpty {
-                contextManager.contexts[contextIndex].documents.append(contentsOf: addedDocuments)
-                contextManager.saveContexts()
-            }
-        }
-    }
-    
     var selectedContext: Context? {
         contextManager.contexts.first(where: { $0.id == selectedContextID })
     }
@@ -97,12 +43,120 @@ struct ContextEditorView: View {
                 showAddAppDialog: $showAddAppDialog,
                 showAddDocumentDialog: $showAddDocumentDialog,
                 showAddBrowserTabDialog: $showAddBrowserTabDialog,
-                showAddTerminalDialog: $showAddTerminalDialog,
-                handleDocumentDrop: handleDocumentDrop
+                showAddTerminalDialog: $showAddTerminalDialog
             )
+            .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
+                return handleUniversalDrop(providers: providers)
+            }
         }
         .frame(minWidth: 900, minHeight: 600)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func handleUniversalDrop(providers: [NSItemProvider]) -> Bool {
+        guard let contextIndex = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) else { 
+            print("No selected context found for drop")
+            return false 
+        }
+        
+        guard !providers.isEmpty else {
+            print("No providers in drop")
+            return false
+        }
+        
+        var handled = false
+        
+        for provider in providers {
+            print("Processing provider with types: \(provider.registeredTypeIdentifiers)")
+            
+            if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) || provider.hasItemConformingToTypeIdentifier("public.file-url") {
+                let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) ? UTType.fileURL.identifier : "public.file-url"
+                provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
+                    if let error = error {
+                        print("Error loading file URL: \(error)")
+                        return
+                    }
+                    print("Loaded item: \(String(describing: item))")
+                    
+                    var url: URL?
+                    if let urlObject = item as? URL {
+                        url = urlObject
+                    } else if let data = item as? Data {
+                        url = URL(dataRepresentation: data, relativeTo: nil)
+                        print("Converted data to URL: \(String(describing: url))")
+                    }
+                    
+                    if let url = url {
+                        print("Processing URL: \(url)")
+                        DispatchQueue.main.async {
+                            if url.pathExtension == "app" {
+                                // Add as application
+                                if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
+                                                                    let appItem = AppItem(name: url.deletingPathExtension().lastPathComponent, bundleIdentifier: bundleId, windowTitle: nil)
+                                contextManager.contexts[contextIndex].applications.append(appItem)
+                                contextManager.saveContexts()
+                                print("Added application: \(appItem.name)")
+                                }
+                            } else {
+                                // Add as document
+                                var bookmark: Data? = nil
+                                do {
+                                    bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                                } catch {
+                                    bookmark = nil
+                                }
+                                let document = DocumentItem(
+                                    name: url.deletingPathExtension().lastPathComponent,
+                                    filePath: url.path,
+                                    application: "",
+                                    bookmark: bookmark
+                                )
+                                contextManager.contexts[contextIndex].documents.append(document)
+                                contextManager.saveContexts()
+                                print("Added document: \(document.name)")
+                            }
+                        }
+                    }
+                }
+                handled = true
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
+                provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
+                    if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
+                        let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
+                        DispatchQueue.main.async {
+                            contextManager.contexts[contextIndex].browserTabs.append(browserTab)
+                            contextManager.saveContexts()
+                        }
+                    } else if let url = item as? URL {
+                        let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
+                        DispatchQueue.main.async {
+                            contextManager.contexts[contextIndex].browserTabs.append(browserTab)
+                            contextManager.saveContexts()
+                        }
+                    }
+                }
+                handled = true
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) || provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
+                let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) ? UTType.text.identifier : UTType.plainText.identifier
+                provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, _ in
+                    if let text = item as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        // Try to parse as URL first
+                        if let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                            let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
+                            DispatchQueue.main.async {
+                                contextManager.contexts[contextIndex].browserTabs.append(browserTab)
+                                contextManager.saveContexts()
+                                print("Added browser tab: \(browserTab.title)")
+                            }
+                        }
+                    }
+                }
+                handled = true
+            }
+        }
+        
+        print("Drop handling complete. Handled: \(handled)")
+        return handled
     }
 }
 
@@ -392,7 +446,7 @@ struct AddDocumentDialog: View {
 struct AddBrowserTabDialog: View {
     @State private var tabTitle: String = ""
     @State private var tabURL: String = ""
-    @State private var selectedBrowser: String = "Safari"
+    @State private var selectedBrowser: String = "Default" // Set default browser as default option
     
     let availableBrowsers = ["Safari", "Chrome", "Firefox", "Default"]
     
@@ -588,4 +642,4 @@ struct ContextCardView: View {
             isHovered = hovering
         }
     }
-} 
+}
