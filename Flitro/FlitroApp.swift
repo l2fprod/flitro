@@ -6,6 +6,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if let window = sender.windows.first {
             window.makeKeyAndOrderFront(nil)
+            NSApp.setActivationPolicy(.regular)
         }
         return true
     }
@@ -18,6 +19,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
         sender.orderOut(nil) // Hides the window instead of closing
+        NSApp.setActivationPolicy(.accessory)
         return false
     }
 }
@@ -69,8 +71,14 @@ struct MenuBarExtraContents: View {
 
     var body: some View {
         Button("Configure") {
+            // First activate the app to ensure it can receive focus
+            NSApp.setActivationPolicy(.regular)
+            NSApp.activate(ignoringOtherApps: true)
+
+            // Then bring the window to front
             if let window = NSApp.windows.first {
                 window.makeKeyAndOrderFront(nil)
+                window.orderFrontRegardless()
             }
         }
         Divider()
