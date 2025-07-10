@@ -50,6 +50,7 @@ struct ContextSidebarView: View {
                 }
             }
             .listStyle(.sidebar)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .alert(isPresented: $showDeleteAlert) {
                 Alert(
                     title: Text("Delete Context"),
@@ -64,6 +65,6 @@ struct ContextSidebarView: View {
                 )
             }
         }
-        .frame(minWidth: 260, maxWidth: 320)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 } 
