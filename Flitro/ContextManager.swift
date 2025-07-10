@@ -239,78 +239,20 @@ class ContextManager: ObservableObject {
     }
     
     private func launchContextApplications(_ context: Context) {
-        let workspace = NSWorkspace.shared
-        
         for app in context.applications {
-            if !app.bundleIdentifier.isEmpty {
-                if let url = workspace.urlForApplication(withBundleIdentifier: app.bundleIdentifier) {
-                    workspace.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-                }
-            }
+            openApp(app)
         }
     }
     
     private func launchContextDocuments(_ context: Context) {
-        let workspace = NSWorkspace.shared
-        
         for doc in context.documents {
-            if let bookmark = doc.bookmark {
-                var isStale = false
-                if let url = try? URL(resolvingBookmarkData: bookmark, 
-                                    options: .withSecurityScope, 
-                                    relativeTo: nil, 
-                                    bookmarkDataIsStale: &isStale) {
-                    let success = url.startAccessingSecurityScopedResource()
-                    if success {
-                        workspace.open(url)
-                        url.stopAccessingSecurityScopedResource()
-                    }
-                }
-            } else {
-                let fileURL = URL(fileURLWithPath: doc.filePath)
-                workspace.open(fileURL)
-            }
+            openDocument(doc)
         }
     }
     
     private func launchContextBrowserTabs(_ context: Context) {
-        // Group tabs by browser
-        var tabsByBrowser: [String: [BrowserTab]] = [:]
         for tab in context.browserTabs {
-            let browser = tab.browser.lowercased()
-            if tabsByBrowser[browser] == nil {
-                tabsByBrowser[browser] = []
-            }
-            tabsByBrowser[browser]?.append(tab)
-        }
-        
-        // Launch tabs for each browser
-        for (browser, tabs) in tabsByBrowser {
-            guard !tabs.isEmpty else { continue }
-            
-            switch browser {
-            case "safari":
-                if !launchSafariTabs(tabs, for: context.id) {
-                    // Fallback to default browser
-                    launchTabsInDefaultBrowser(tabs, for: context.id)
-                }
-                
-            case "chrome":
-                if !launchChromeTabs(tabs, for: context.id) {
-                    // Fallback to default browser
-                    launchTabsInDefaultBrowser(tabs, for: context.id)
-                }
-                
-            case "firefox":
-                if !launchFirefoxTabs(tabs, for: context.id) {
-                    // Fallback to default browser
-                    launchTabsInDefaultBrowser(tabs, for: context.id)
-                }
-                
-            default:
-                // Default browser - open each URL separately
-                launchTabsInDefaultBrowser(tabs, for: context.id)
-            }
+            openBrowserTab(tab)
         }
     }
     
@@ -404,6 +346,66 @@ class ContextManager: ObservableObject {
                     print("Failed to launch terminal session: \(error)")
                 }
             }
+        }
+    }
+    
+    // MARK: - Single Item Launching
+    
+    func openApp(_ app: AppItem) {
+        let workspace = NSWorkspace.shared
+        if !app.bundleIdentifier.isEmpty {
+            if let url = workspace.urlForApplication(withBundleIdentifier: app.bundleIdentifier) {
+                workspace.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
+            }
+        }
+    }
+    
+    func openDocument(_ doc: DocumentItem) {
+        let workspace = NSWorkspace.shared
+        if let bookmark = doc.bookmark {
+            var isStale = false
+            if let url = try? URL(resolvingBookmarkData: bookmark, 
+                                options: .withSecurityScope, 
+                                relativeTo: nil, 
+                                bookmarkDataIsStale: &isStale) {
+                let success = url.startAccessingSecurityScopedResource()
+                if success {
+                    workspace.open(url)
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
+        } else {
+            let fileURL = URL(fileURLWithPath: doc.filePath)
+            workspace.open(fileURL)
+        }
+    }
+    
+    func openBrowserTab(_ tab: BrowserTab) {
+        let workspace = NSWorkspace.shared
+        let url = URL(string: tab.url)
+        guard let url = url else { return }
+        let browser = tab.browser.lowercased()
+        switch browser {
+        case "safari":
+            if let safariURL = workspace.urlForApplication(withBundleIdentifier: "com.apple.Safari") {
+                workspace.open([url], withApplicationAt: safariURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
+            } else {
+                workspace.open(url)
+            }
+        case "chrome":
+            if let chromeURL = workspace.urlForApplication(withBundleIdentifier: "com.google.Chrome") {
+                workspace.open([url], withApplicationAt: chromeURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
+            } else {
+                workspace.open(url)
+            }
+        case "firefox":
+            if let firefoxURL = workspace.urlForApplication(withBundleIdentifier: "org.mozilla.firefox") {
+                workspace.open([url], withApplicationAt: firefoxURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in }
+            } else {
+                workspace.open(url)
+            }
+        default:
+            workspace.open(url)
         }
     }
     

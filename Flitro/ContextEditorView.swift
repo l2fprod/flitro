@@ -220,6 +220,7 @@ struct CardRow: View {
     var icon: String
     var title: String
     var subtitle: String?
+    var onOpen: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
@@ -234,6 +235,13 @@ struct CardRow: View {
                 }
             }
             Spacer()
+            if let onOpen = onOpen {
+                Button(action: onOpen) {
+                    Image(systemName: "arrow.up.forward.app")
+                }
+                .buttonStyle(.plain)
+                .help("Open")
+            }
             if let onDelete = onDelete {
                 Button(action: onDelete) {
                     Image(systemName: "trash").foregroundColor(.red)

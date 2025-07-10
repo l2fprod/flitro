@@ -28,6 +28,7 @@ struct ContextDetailsView: View {
                                     icon: "folder",
                                     title: app.name,
                                     subtitle: app.bundleIdentifier,
+                                    onOpen: { contextManager.openApp(app) },
                                     onDelete: {
                                         contextManager.contexts[contextIdx].applications.removeAll { $0.id == app.id }
                                     }
@@ -45,6 +46,7 @@ struct ContextDetailsView: View {
                                     icon: "doc",
                                     title: doc.name,
                                     subtitle: doc.filePath,
+                                    onOpen: { contextManager.openDocument(doc) },
                                     onDelete: {
                                         contextManager.contexts[contextIdx].documents.removeAll { $0.id == doc.id }
                                     }
@@ -71,6 +73,7 @@ struct ContextDetailsView: View {
                                     icon: "globe",
                                     title: tab.title,
                                     subtitle: tab.url,
+                                    onOpen: { contextManager.openBrowserTab(tab) },
                                     onDelete: {
                                         contextManager.contexts[contextIdx].browserTabs.removeAll { $0.id == tab.id }
                                         contextManager.saveContexts()
