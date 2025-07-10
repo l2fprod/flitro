@@ -48,6 +48,9 @@ struct ContextSidebarView: View {
                     .tag(context.id as UUID?)
                     .listRowBackground(EmptyView())
                 }
+                .onMove { indices, newOffset in
+                    contextManager.reorderContexts(fromOffsets: indices, toOffset: newOffset)
+                }
             }
             .listStyle(.sidebar)
             .frame(maxWidth: .infinity, alignment: .leading)

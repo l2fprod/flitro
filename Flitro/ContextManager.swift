@@ -201,6 +201,13 @@ class ContextManager: ObservableObject {
         }
     }
     
+    // MARK: - Context Reordering
+    /// Reorder contexts and persist the new order
+    func reorderContexts(fromOffsets: IndexSet, toOffset: Int) {
+        contexts.move(fromOffsets: fromOffsets, toOffset: toOffset)
+        saveContexts()
+    }
+    
     // MARK: - Application Management
     
     func closeContextApplications(_ context: Context) {
