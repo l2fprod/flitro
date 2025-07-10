@@ -615,17 +615,16 @@ struct ContextCardView: View {
     
     var body: some View {
         HStack(alignment: .center, spacing: 16) {
-            // ZStack {
-            //     RoundedRectangle(cornerRadius: 12)
-            //         .fill(iconColor.opacity(0.18))
-            //         .frame(width: 44, height: 44)
-            //     Image(systemName: "rocket.fill")
-            //         .foregroundColor(iconColor)
-            //         .font(.system(size: 22, weight: .bold))
-            // }
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(context.name)
                     .font(.system(size: 16, weight: .semibold))
+                    .lineLimit(2)
+                    .truncationMode(.tail)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .minimumScaleFactor(0.6)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 6) {
@@ -635,15 +634,6 @@ struct ContextCardView: View {
             }
         }
         .padding(16)
-        // .background(
-        //     RoundedRectangle(cornerRadius: 8)
-        //         .fill(backgroundColor)
-        // )
-        // .overlay(
-        //     RoundedRectangle(cornerRadius: 8)
-        //         .stroke(borderColor, lineWidth: isSelected ? 2 : 1)
-        // )
-        // .shadow(color: isSelected ? Color.blue.opacity(0.08) : Color.black.opacity(0.03), radius: 6, x: 0, y: 2)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
         .onTapGesture { onSelect() }
         .onHover { hovering in
