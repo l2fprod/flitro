@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct ColorSelectionSection: View {
     let title: String
@@ -71,4 +72,36 @@ struct ColorSelectionSection: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
     }
-} 
+}
+
+class ColorPanelCoordinator: NSObject {
+    var onColorChanged: ((Color) -> Void)?
+    private var colorPanel: NSColorPanel?
+    
+    func showColorPanel(initialColor: Color) {
+        colorPanel = NSColorPanel()
+        colorPanel?.color = NSColor(initialColor)
+        colorPanel?.setTarget(self)
+        colorPanel?.setAction(#selector(colorChanged))
+        colorPanel?.makeKeyAndOrderFront(nil)
+    }
+    
+    @objc func colorChanged() {
+        guard let colorPanel = colorPanel else { return }
+        let newColor = Color(colorPanel.color)
+        onColorChanged?(newColor)
+    }
+    
+    func closeColorPanel() {
+        colorPanel?.close()
+        colorPanel = nil
+    }
+}
+
+class BackgroundColorPanelCoordinator: ColorPanelCoordinator {
+    static let shared = BackgroundColorPanelCoordinator()
+}
+
+class ForegroundColorPanelCoordinator: ColorPanelCoordinator {
+    static let shared = ForegroundColorPanelCoordinator()
+}
