@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import PhosphorSwift
 
 // MARK: - App Delegate for Window Reopen and Hide-on-Close
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
@@ -83,7 +84,7 @@ struct MenuBarExtraContents: View {
         }
         Divider()
         ForEach(contextManager.contexts) { context in
-            Menu(context.name) {
+            Menu {
                 ForEach(SwitchingMode.allCases, id: \.self) { mode in
                     Button(mode.rawValue) {
                         contextManager.switchToContext(context, switchingMode: mode)
@@ -93,9 +94,49 @@ struct MenuBarExtraContents: View {
                 Button("Close") {
                     contextManager.closeContextApplications(context)
                 }
+            } label: {
+                HStack {
+                    ContextIconView(context: context, size: 20)
+                    Text(context.name)
+                }
             }
         }
         Divider()
         Button("Quit") { NSApp.terminate(nil) }
+    }
+}
+
+struct ContextIconView: View {
+    let context: Context
+    let size: CGFloat
+    
+    var body: some View {
+        ZStack {
+            if let iconBackgroundColor = context.iconBackgroundColor,
+               let backgroundColor = Color(hex: iconBackgroundColor) {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(backgroundColor)
+                    .frame(width: size, height: size)
+            }
+            
+            if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
+                icon.regular
+                    .font(.system(size: size * 0.6))
+                    .foregroundColor(iconForegroundColor)
+            } else {
+                Image(systemName: "folder")
+                    .font(.system(size: size * 0.6))
+                    .foregroundColor(.blue)
+            }
+        }
+        .frame(width: size, height: size)
+    }
+    
+    private var iconForegroundColor: Color {
+        if let iconForegroundColor = context.iconForegroundColor,
+           let color = Color(hex: iconForegroundColor) {
+            return color
+        }
+        return .primary
     }
 }

@@ -11,6 +11,9 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
     var documents: [DocumentItem]
     var browserTabs: [BrowserTab]
     var terminalSessions: [TerminalSession]
+    var iconName: String? = nil
+    var iconBackgroundColor: String? = nil // Optional hex color string
+    var iconForegroundColor: String? = nil // Optional hex color string
     var isActive: Bool = false
     var createdAt: Date = Date()
     var lastUsed: Date = Date()
@@ -92,13 +95,16 @@ class ContextManager: ObservableObject {
     
     // MARK: - Context Management
     
-    func createContext(name: String, applications: [AppItem] = [], documents: [DocumentItem] = [], browserTabs: [BrowserTab] = [], terminalSessions: [TerminalSession] = []) {
+    func createContext(name: String, applications: [AppItem] = [], documents: [DocumentItem] = [], browserTabs: [BrowserTab] = [], terminalSessions: [TerminalSession] = [], iconName: String? = nil, iconBackgroundColor: String? = nil, iconForegroundColor: String? = nil) {
         let context = Context(
             name: name,
             applications: applications,
             documents: documents,
             browserTabs: browserTabs,
-            terminalSessions: terminalSessions
+            terminalSessions: terminalSessions,
+            iconName: iconName,
+            iconBackgroundColor: iconBackgroundColor,
+            iconForegroundColor: iconForegroundColor
         )
         contexts.append(context)
         saveContexts()
@@ -138,7 +144,10 @@ class ContextManager: ObservableObject {
             applications: [],
             documents: [],
             browserTabs: [],
-            terminalSessions: []
+            terminalSessions: [],
+            iconName: nil,
+            iconBackgroundColor: nil,
+            iconForegroundColor: nil
         )
         
         // Capture running applications
@@ -455,7 +464,8 @@ class ContextManager: ObservableObject {
                 ],
                 terminalSessions: [
                     TerminalSession(workingDirectory: "/Users/user/Projects/ProjectA", command: "npm run dev", title: "Development Server")
-                ]
+                ],
+                iconName: "code"
             ),
             Context(
                 name: "Team Management",
@@ -469,7 +479,8 @@ class ContextManager: ObservableObject {
                     BrowserTab(title: "Team Dashboard", url: "https://notion.so/team-dashboard", browser: "Safari"),
                     BrowserTab(title: "HR Portal", url: "https://company.com/hr", browser: "Safari")
                 ],
-                terminalSessions: []
+                terminalSessions: [],
+                iconName: "users"
             )
         ]
         

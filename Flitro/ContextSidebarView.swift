@@ -13,12 +13,13 @@ struct ContextSidebarView: View {
                     .fontWeight(.semibold)
                 Spacer()
                 Button(action: {
-                    let newContext = Context(name: "New Context", applications: [], documents: [], browserTabs: [], terminalSessions: [])
+                    let newContext = Context(name: "New Context", applications: [], documents: [], browserTabs: [], terminalSessions: [], iconName: nil)
                     contextManager.contexts.append(newContext)
                     selectedContextID = newContext.id
                 }) {
-                    Image(systemName: "plus")
-                        .font(.title2)
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color(nsColor: NSColor.systemGray))
                 }
                 .buttonStyle(.plain)
                 .help("Add Context")
@@ -27,9 +28,9 @@ struct ContextSidebarView: View {
                         showDeleteAlert = true
                     }
                 }) {
-                    Image(systemName: "minus")
-                        .font(.title2)
-                        .foregroundColor(selectedContextID == nil ? .gray : .primary)
+                    Image(systemName: "minus.circle.fill")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(Color(nsColor: NSColor.systemGray))
                 }
                 .buttonStyle(.plain)
                 .disabled(selectedContextID == nil)
@@ -42,11 +43,18 @@ struct ContextSidebarView: View {
                     ContextCardView(
                         context: context,
                         isSelected: context.id == selectedContextID,
-                        onSelect: { selectedContextID = context.id }
+                        onSelect: { selectedContextID = context.id },
+                        onIconChange: { iconName, backgroundColorHex, foregroundColorHex in
+                            if let index = contextManager.contexts.firstIndex(where: { $0.id == context.id }) {
+                                contextManager.contexts[index].iconName = iconName
+                                contextManager.contexts[index].iconBackgroundColor = backgroundColorHex
+                                contextManager.contexts[index].iconForegroundColor = foregroundColorHex
+                                contextManager.saveContexts()
+                            }
+                        }
                     )
                     .contentShape(Rectangle())
                     .tag(context.id as UUID?)
-                    .listRowBackground(EmptyView())
                 }
                 .onMove { indices, newOffset in
                     contextManager.reorderContexts(fromOffsets: indices, toOffset: newOffset)
@@ -54,20 +62,20 @@ struct ContextSidebarView: View {
             }
             .listStyle(.sidebar)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .alert(isPresented: $showDeleteAlert) {
-                Alert(
-                    title: Text("Delete Context"),
-                    message: Text("Are you sure you want to delete this context?"),
-                    primaryButton: .destructive(Text("Delete")) {
-                        if let id = selectedContextID, let context = contextManager.contexts.first(where: { $0.id == id }) {
-                            contextManager.deleteContext(context)
-                            selectedContextID = nil
-                        }
-                    },
-                    secondaryButton: .cancel()
-                )
-            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .alert(isPresented: $showDeleteAlert) {
+            Alert(
+                title: Text("Delete Context"),
+                message: Text("Are you sure you want to delete this context?"),
+                primaryButton: .destructive(Text("Delete")) {
+                    if let id = selectedContextID, let context = contextManager.contexts.first(where: { $0.id == id }) {
+                        contextManager.deleteContext(context)
+                        selectedContextID = nil
+                    }
+                },
+                secondaryButton: .cancel()
+            )
+        }
     }
 } 

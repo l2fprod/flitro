@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		B63A63842E20A1410032C498 /* PhosphorSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B63A63832E20A1410032C498 /* PhosphorSwift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		B65885EC2E196B0700F19C4A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +56,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B63A63842E20A1410032C498 /* PhosphorSwift in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +117,7 @@
 			);
 			name = Flitro;
 			packageProductDependencies = (
+				B63A63832E20A1410032C498 /* PhosphorSwift */,
 			);
 			productName = Flitro;
 			productReference = B65885DD2E196B0600F19C4A /* Flitro.app */;
@@ -195,6 +201,9 @@
 			);
 			mainGroup = B65885D42E196B0600F19C4A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				B63A63822E20A1410032C498 /* XCRemoteSwiftPackageReference "swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B65885DE2E196B0600F19C4A /* Products */;
 			projectDirPath = "";
@@ -549,6 +558,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		B63A63822E20A1410032C498 /* XCRemoteSwiftPackageReference "swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/phosphor-icons/swift";
+			requirement = {
+				kind = exactVersion;
+				version = 2.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		B63A63832E20A1410032C498 /* PhosphorSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B63A63822E20A1410032C498 /* XCRemoteSwiftPackageReference "swift" */;
+			productName = PhosphorSwift;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = B65885D52E196B0600F19C4A /* Project object */;
 }
