@@ -87,6 +87,16 @@ struct ContextEditorView: View {
                                     contextManager.saveContexts()
                                     print("Added application: \(appItem.name)")
                                 }
+                            } else if url.pathExtension == "sh" {
+                                // Add as terminal session (shell script)
+                                let session = TerminalSession(
+                                    workingDirectory: url.deletingLastPathComponent().path,
+                                    command: url.path,
+                                    title: url.deletingPathExtension().lastPathComponent
+                                )
+                                contextManager.contexts[contextIndex].terminalSessions.append(session)
+                                contextManager.saveContexts()
+                                print("Added terminal session for script: \(session.title)")
                             } else {
                                 // Add as document
                                 var bookmark: Data? = nil
@@ -105,6 +115,33 @@ struct ContextEditorView: View {
                                 contextManager.saveContexts()
                                 print("Added document: \(document.name)")
                             }
+                        }
+                    }
+                }
+                handled = true
+            } else if provider.hasItemConformingToTypeIdentifier("public.shell-script") {
+                provider.loadItem(forTypeIdentifier: "public.shell-script", options: nil) { item, error in
+                    if let error = error {
+                        print("Error loading shell script: \(error)")
+                        return
+                    }
+                    var url: URL?
+                    if let urlObject = item as? URL {
+                        url = urlObject
+                    } else if let data = item as? Data {
+                        url = URL(dataRepresentation: data, relativeTo: nil)
+                        print("Converted data to URL: \(String(describing: url))")
+                    }
+                    if let url = url {
+                        DispatchQueue.main.async {
+                            let session = TerminalSession(
+                                workingDirectory: url.deletingLastPathComponent().path,
+                                command: url.path,
+                                title: url.deletingPathExtension().lastPathComponent
+                            )
+                            contextManager.contexts[contextIndex].terminalSessions.append(session)
+                            contextManager.saveContexts()
+                            print("Added terminal session for script: \(session.title)")
                         }
                     }
                 }
@@ -641,6 +678,12 @@ extension View {
             placeholder().opacity(shouldShow ? 1 : 0)
             self
         }
+    }
+}
+
+extension UTType {
+    static var shellScript: UTType {
+        UTType(importedAs: "public.shell-script")
     }
 }
 
