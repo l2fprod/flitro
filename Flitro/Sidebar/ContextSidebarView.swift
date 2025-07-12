@@ -4,6 +4,7 @@ struct ContextSidebarView: View {
     @ObservedObject var contextManager: ContextManager
     @Binding var selectedContextID: UUID?
     @Binding var showDeleteAlert: Bool
+    @StateObject private var permissionsManager = PermissionsManager.shared
     
     var body: some View {
         VStack(spacing: 0) {
@@ -62,8 +63,32 @@ struct ContextSidebarView: View {
             }
             .listStyle(.sidebar)
             .frame(maxWidth: .infinity, alignment: .leading)
+
+            // Permissions button at the bottom
+            VStack(spacing: 0) {
+                Divider()
+                Button(action: {
+                    permissionsManager.showPermissionDialog()
+                }) {
+                    HStack {
+                        Image(systemName: permissionsManager.hasAllPermissions ? "checkmark.shield" : "exclamationmark.shield")
+                            .foregroundColor(permissionsManager.hasAllPermissions ? .green : .orange)
+                        Text(permissionsManager.permissionStatusMessage)
+                            .font(.caption)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                }
+                .buttonStyle(.plain)
+                .background(Color(NSColor.controlBackgroundColor))
+                .help("Configure accessibility and automation permissions")
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            permissionsManager.checkPermissions()
+        }
         .alert(isPresented: $showDeleteAlert) {
             Alert(
                 title: Text("Delete Context"),
