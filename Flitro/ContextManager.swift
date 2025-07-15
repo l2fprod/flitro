@@ -77,6 +77,9 @@ class ContextManager: ObservableObject {
     @Published var contexts: [Context] = []
     @Published var activeContext: Context?
     
+    // Mapping from context UUID to Chrome window ID
+    private var chromeWindowIDs: [UUID: Int] = [:]
+    
     private let appName = Bundle.main.bundleIdentifier ?? "Flitro"
     private let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
     private var appDirectory: URL {
@@ -179,7 +182,7 @@ class ContextManager: ObservableObject {
         case .replaceAll:
             // Close applications and browser windows from current context
             if let currentContext = activeContext {
-                closeContextApplications(currentContext)
+                closeContext(currentContext)
             }
             
             // Set new active context
@@ -219,7 +222,7 @@ class ContextManager: ObservableObject {
     
     // MARK: - Application Management
     
-    func closeContextApplications(_ context: Context) {
+    func closeContext(_ context: Context) {
         let workspace = NSWorkspace.shared
         let runningApps = workspace.runningApplications
         
@@ -237,6 +240,9 @@ class ContextManager: ObservableObject {
                 }
             }
         }
+
+        // Close any Chrome window opened for this context (if tracked)
+        closeChromeWindowForContext(context.id)
     }
     
     private func isSystemApp(_ bundleIdentifier: String) -> Bool {
@@ -265,9 +271,55 @@ class ContextManager: ObservableObject {
             openDocument(doc)
         }
     }
+
+    /// Returns the default browser used on this Mac as a string: "google", "safari", "firefox", or "other"
+    func getDefaultBrowser() -> String {
+        let workspace = NSWorkspace.shared
+        guard let httpURL = URL(string: "http://example.com") else {
+            return "other"
+        }
+        if let appURL = workspace.urlForApplication(toOpen: httpURL) {
+            let bundleID = Bundle(url: appURL)?.bundleIdentifier ?? ""
+            switch bundleID {
+            case "com.google.Chrome":
+                return "chrome"
+            case "com.apple.Safari":
+                return "safari"
+            case "org.mozilla.firefox":
+                return "firefox"
+            default:
+                return "other"
+            }
+        }
+        return "other"
+    }
     
     private func launchContextBrowserTabs(_ context: Context) {
-        for tab in context.browserTabs {
+        // Determine if Chrome is the default browser
+        let isChromeDefault = getDefaultBrowser() == "chrome"
+        // Group tabs by browser, including 'default' tabs in Chrome if Chrome is default
+        let chromeTabs: [BrowserTab]
+        let otherTabs: [BrowserTab]
+        if isChromeDefault {
+            chromeTabs = context.browserTabs.filter { tab in
+                let b = tab.browser.lowercased()
+                return b == "chrome" || b == "default"
+            }
+            otherTabs = context.browserTabs.filter { tab in
+                let b = tab.browser.lowercased()
+                return b != "chrome" && b != "default"
+            }
+        } else {
+            chromeTabs = context.browserTabs.filter { $0.browser.lowercased() == "chrome" }
+            otherTabs = context.browserTabs.filter { $0.browser.lowercased() != "chrome" }
+        }
+        // Open Chrome tabs using Apple Events
+        if !chromeTabs.isEmpty {
+            print("Launching Chrome tabs: \(chromeTabs)")
+            _ = launchChromeTabsWithAppleEvents(chromeTabs, for: context.id)
+        }
+        // Open other tabs using the existing method
+        for tab in otherTabs {
             openBrowserTab(tab)
         }
     }
@@ -337,6 +389,69 @@ class ContextManager: ObservableObject {
             }
         }
         return true
+    }
+    
+    /// Launch Chrome tabs using Apple Events (AppleScript), creating a new window and tracking its ID
+    func launchChromeTabsWithAppleEvents(_ tabs: [BrowserTab], for contextId: UUID) -> Bool {
+        guard !tabs.isEmpty else { return false }
+        // Build AppleScript
+        let urls = tabs.map { $0.url }.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !urls.isEmpty else { return false }
+        let urlList = urls.map { "\"\($0)\"" }.joined(separator: ", ")
+        let script = """
+        tell application \"Google Chrome\"
+            activate
+            if not (exists window 1) then
+                make new window
+            else
+                make new window
+            end if
+            set winId to id of front window
+            set tabUrls to { \(urlList) }
+            repeat with theUrl in tabUrls
+                tell window id winId to make new tab with properties {URL:theUrl}
+            end repeat
+            -- Remove the default blank tab
+            if (count of tabs of window id winId) > (count of tabUrls) then
+                try
+                    close tab 1 of window id winId
+                end try
+            end if
+            return winId
+        end tell
+        """
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary? = nil
+            let result = appleScript.executeAndReturnError(&error)
+            let winId = result.int32Value
+            if winId != 0 {
+                chromeWindowIDs[contextId] = Int(winId)
+                return true
+            } else if let error = error {
+                print("AppleScript error: \(error)")
+            }
+        }
+        return false
+    }
+
+    /// Close the Chrome window associated with a context (by window ID)
+    func closeChromeWindowForContext(_ contextId: UUID) {
+        guard let winId = chromeWindowIDs[contextId] else { return }
+        let script = """
+        tell application \"Google Chrome\"
+            if (exists window id \(winId)) then
+                close window id \(winId)
+            end if
+        end tell
+        """
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary? = nil
+            appleScript.executeAndReturnError(&error)
+            if let error = error {
+                print("Failed to close Chrome window: \(error)")
+            }
+        }
+        chromeWindowIDs.removeValue(forKey: contextId)
     }
     
     private func launchContextTerminals(_ context: Context) {
@@ -430,7 +545,9 @@ class ContextManager: ObservableObject {
     func saveContexts() {
         do {
             print("Saving contexts to \(contextsFileURL)")
-            let data = try JSONEncoder().encode(contexts)
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            let data = try encoder.encode(contexts)
             try data.write(to: contextsFileURL)
         } catch {
             print("Failed to save contexts: \(error)")

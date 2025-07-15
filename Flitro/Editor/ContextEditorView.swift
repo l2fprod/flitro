@@ -4,8 +4,6 @@ import UniformTypeIdentifiers
 import AppKit
 import PhosphorSwift
 
-// MARK: - Context Editor View
-
 struct ContextEditorView: View {
     @ObservedObject var contextManager: ContextManager
     @Binding var selectedContextID: UUID?
@@ -187,8 +185,6 @@ struct ContextEditorView: View {
     }
 }
 
-// MARK: - UI Components
-
 struct CardSection: View {
     var title: String
     var items: [CardRow]
@@ -282,13 +278,11 @@ struct CardRow: View {
     }
 }
 
-// MARK: - Generic Dialog Component
-
 struct GenericDialog<Content: View>: View {
     let title: String
     let content: Content
     let onCancel: () -> Void
-    let onConfirm: () -> Void
+    let onConfirm: (Content) -> Void
     let confirmTitle: String
     let isConfirmDisabled: Bool
     
@@ -297,7 +291,7 @@ struct GenericDialog<Content: View>: View {
         confirmTitle: String = "Add",
         isConfirmDisabled: Bool = false,
         onCancel: @escaping () -> Void,
-        onConfirm: @escaping () -> Void,
+        onConfirm: @escaping (Content) -> Void,
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
@@ -321,7 +315,7 @@ struct GenericDialog<Content: View>: View {
             HStack {
                 Spacer()
                 Button("Cancel") { onCancel() }
-                Button(confirmTitle) { onConfirm() }
+                Button(confirmTitle) { onConfirm(content) }
                     .disabled(isConfirmDisabled)
             }
             .padding(.top, 16)
@@ -330,291 +324,6 @@ struct GenericDialog<Content: View>: View {
         .frame(width: 420, height: 340)
         .background(Color(.windowBackgroundColor))
         .cornerRadius(12)
-    }
-}
-
-// MARK: - Dialog Content Views
-
-struct AddAppDialogContent: View {
-    enum Tab { case browse, running, manual }
-    @State private var selectedTab: Tab = .browse
-    @State private var manualName: String = ""
-    @State private var manualBundle: String = ""
-    @State private var manualWindowTitle: String = ""
-    @State private var selectedRunningAppPIDs: Set<pid_t> = []
-    @State private var browseAppName: String = ""
-    @State private var browseBundle: String = ""
-    @State private var browseWindowTitle: String = ""
-    @State private var showOpenPanel = false
-    var onAdd: (AppItem) -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Picker("Method", selection: $selectedTab) {
-                Text("Browse").tag(Tab.browse)
-                Text("Running Apps").tag(Tab.running)
-                Text("Manual").tag(Tab.manual)
-            }
-            .pickerStyle(.segmented)
-            .padding(.bottom, 16)
-            
-            if selectedTab == .browse {
-                VStack(alignment: .leading, spacing: 12) {
-                    Button("Choose Application...") {
-                        showOpenPanel = true
-                    }
-                    if !browseAppName.isEmpty {
-                        Text("Name: \(browseAppName)")
-                        Text("Bundle ID: \(browseBundle)")
-                        TextField("Window Title (optional)", text: $browseWindowTitle)
-                    }
-                }
-            } else if selectedTab == .running {
-                let runningApps = NSWorkspace.shared.runningApplications
-                    .filter { $0.bundleIdentifier != nil && $0.activationPolicy == .regular }
-                    .sorted { ($0.localizedName ?? "").localizedCaseInsensitiveCompare($1.localizedName ?? "") == .orderedAscending }
-                List(runningApps, id: \.processIdentifier) { app in
-                    HStack {
-                        Text(app.localizedName ?? "Unknown")
-                        Spacer()
-                        Text(app.bundleIdentifier ?? "")
-                        if selectedRunningAppPIDs.contains(app.processIdentifier) {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if selectedRunningAppPIDs.contains(app.processIdentifier) {
-                            selectedRunningAppPIDs.remove(app.processIdentifier)
-                        } else {
-                            selectedRunningAppPIDs.insert(app.processIdentifier)
-                        }
-                    }
-                }
-            } else if selectedTab == .manual {
-                VStack(alignment: .leading, spacing: 12) {
-                    TextField("App Name", text: $manualName)
-                    TextField("Bundle Identifier", text: $manualBundle)
-                    TextField("Window Title (optional)", text: $manualWindowTitle)
-                }
-            }
-        }
-        .onChange(of: showOpenPanel) { oldValue, newValue in
-            if newValue {
-                let panel = NSOpenPanel()
-                panel.allowedContentTypes = [UTType.application]
-                panel.allowsMultipleSelection = false
-                panel.canChooseDirectories = false
-                panel.canChooseFiles = true
-                if panel.runModal() == .OK, let url = panel.url {
-                    if let bundle = Bundle(url: url),
-                       let bundleId = bundle.bundleIdentifier {
-                        browseAppName = url.deletingPathExtension().lastPathComponent
-                        browseBundle = bundleId
-                    } else {
-                        browseAppName = url.deletingPathExtension().lastPathComponent
-                        browseBundle = ""
-                    }
-                }
-                showOpenPanel = false
-            }
-        }
-    }
-    
-    func createAppItem() -> AppItem? {
-        if selectedTab == .browse {
-            return AppItem(name: browseAppName, bundleIdentifier: browseBundle, windowTitle: browseWindowTitle.isEmpty ? nil : browseWindowTitle)
-        } else if selectedTab == .running {
-            let runningApps = NSWorkspace.shared.runningApplications
-                .filter { $0.bundleIdentifier != nil && $0.activationPolicy == .regular }
-                .sorted { ($0.localizedName ?? "").localizedCaseInsensitiveCompare($1.localizedName ?? "") == .orderedAscending }
-            let selectedApps = runningApps.filter { selectedRunningAppPIDs.contains($0.processIdentifier) }
-            if let app = selectedApps.first, let name = app.localizedName, let bundle = app.bundleIdentifier {
-                return AppItem(name: name, bundleIdentifier: bundle, windowTitle: nil)
-            }
-        } else if selectedTab == .manual {
-            return AppItem(name: manualName, bundleIdentifier: manualBundle, windowTitle: manualWindowTitle.isEmpty ? nil : manualWindowTitle)
-        }
-        return nil
-    }
-    
-    var isConfirmDisabled: Bool {
-        (selectedTab == .browse && (browseAppName.isEmpty || browseBundle.isEmpty)) ||
-        (selectedTab == .running && selectedRunningAppPIDs.isEmpty) ||
-        (selectedTab == .manual && (manualName.isEmpty || manualBundle.isEmpty))
-    }
-}
-
-struct AddDocumentDialogContent: View {
-    enum Tab { case browse, opened }
-    @State private var selectedTab: Tab = .browse
-    @State private var docName: String = ""
-    @State private var docPath: String = ""
-    @State private var docApp: String = ""
-    @State private var showOpenPanel = false
-    @State private var bookmark: Data? = nil
-    var onAdd: (DocumentItem) -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Picker("Method", selection: $selectedTab) {
-                Text("Browse").tag(Tab.browse)
-                Text("Opened Documents").tag(Tab.opened)
-            }
-            .pickerStyle(.segmented)
-            .padding(.bottom, 16)
-            
-            if selectedTab == .browse {
-                VStack(alignment: .leading, spacing: 12) {
-                    Button("Choose Document...") {
-                        showOpenPanel = true
-                    }
-                    if !docPath.isEmpty {
-                        Text("Name: \(docName)")
-                        Text("Path: \(docPath)")
-                        TextField("Application (optional)", text: $docApp)
-                    }
-                }
-            } else if selectedTab == .opened {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("No opened documents detected.")
-                        .foregroundColor(.secondary)
-                }
-            }
-        }
-        .onChange(of: showOpenPanel) { oldValue, newValue in
-            if newValue {
-                let panel = NSOpenPanel()
-                panel.allowsMultipleSelection = false
-                panel.canChooseDirectories = false
-                panel.canChooseFiles = true
-                if panel.runModal() == .OK, let url = panel.url {
-                    docName = url.deletingPathExtension().lastPathComponent
-                    docPath = url.path
-                    do {
-                        bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                    } catch {
-                        bookmark = nil
-                    }
-                }
-                showOpenPanel = false
-            }
-        }
-    }
-    
-    func createDocumentItem() -> DocumentItem {
-        return DocumentItem(name: docName, filePath: docPath, application: docApp.isEmpty ? "" : docApp, bookmark: bookmark)
-    }
-    
-    var isConfirmDisabled: Bool {
-        docName.isEmpty || docPath.isEmpty
-    }
-}
-
-struct AddBrowserTabDialogContent: View {
-    @State private var tabTitle: String = ""
-    @State private var tabURL: String = ""
-    @State private var selectedBrowser: String = "Default"
-    
-    let availableBrowsers = ["Safari", "Chrome", "Firefox", "Default"]
-    var onAdd: (BrowserTab) -> Void
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField("Tab Title", text: $tabTitle)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-            
-            TextField("URL", text: $tabURL)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
-                .placeholder(when: tabURL.isEmpty) {
-                    Text("https://example.com")
-                        .foregroundColor(.secondary)
-                }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Browser")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Picker("Browser", selection: $selectedBrowser) {
-                    ForEach(availableBrowsers, id: \.self) { browser in
-                        Text(browser).tag(browser)
-                    }
-                }
-                .pickerStyle(MenuPickerStyle())
-            }
-        }
-    }
-    
-    func createBrowserTab() -> BrowserTab {
-        let browser = selectedBrowser == "Default" ? "default" : selectedBrowser
-        return BrowserTab(
-            title: tabTitle.isEmpty ? tabURL : tabTitle,
-            url: tabURL,
-            browser: browser
-        )
-    }
-    
-    var isConfirmDisabled: Bool {
-        tabURL.isEmpty
-    }
-}
-
-// MARK: - Dialog Wrappers
-
-struct AddAppDialog: View {
-    var onAdd: (AppItem) -> Void
-    var onCancel: () -> Void
-    
-    var body: some View {
-        GenericDialog(
-            title: "Add Application",
-            onCancel: onCancel,
-            onConfirm: {
-                let content = AddAppDialogContent(onAdd: onAdd)
-                if let appItem = content.createAppItem() {
-                    onAdd(appItem)
-                }
-            }
-        ) {
-            AddAppDialogContent(onAdd: onAdd)
-        }
-    }
-}
-
-struct AddDocumentDialog: View {
-    var onAdd: (DocumentItem) -> Void
-    var onCancel: () -> Void
-    
-    var body: some View {
-        GenericDialog(
-            title: "Add Document",
-            onCancel: onCancel,
-            onConfirm: {
-                let content = AddDocumentDialogContent(onAdd: onAdd)
-                onAdd(content.createDocumentItem())
-            }
-        ) {
-            AddDocumentDialogContent(onAdd: onAdd)
-        }
-    }
-}
-
-struct AddBrowserTabDialog: View {
-    var onAdd: (BrowserTab) -> Void
-    var onCancel: () -> Void
-    
-    var body: some View {
-        GenericDialog(
-            title: "Add Browser Tab",
-            onCancel: onCancel,
-            onConfirm: {
-                let content = AddBrowserTabDialogContent(onAdd: onAdd)
-                onAdd(content.createBrowserTab())
-            }
-        ) {
-            AddBrowserTabDialogContent(onAdd: onAdd)
-        }
     }
 }
 
@@ -665,8 +374,6 @@ struct EditableContextName: View {
         }
     }
 }
-
-// MARK: - Extensions
 
 extension View {
     func placeholder<Content: View>(

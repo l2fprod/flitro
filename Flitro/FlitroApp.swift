@@ -92,7 +92,7 @@ struct MenuBarExtraContents: View {
                 }
                 Divider()
                 Button("Close") {
-                    contextManager.closeContextApplications(context)
+                    contextManager.closeContext(context)
                 }
             } label: {
                 HStack {

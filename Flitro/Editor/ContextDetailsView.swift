@@ -124,6 +124,7 @@ struct ContextDetailsView: View {
                     AddAppDialog(
                         onAdd: { newApp in
                             contextManager.contexts[contextIdx].applications.append(newApp)
+                            contextManager.saveContexts()
                             showAddAppDialog = false
                         },
                         onCancel: { showAddAppDialog = false }
@@ -191,7 +192,7 @@ struct ContextDetailsView: View {
                         .buttonStyle(.plain)
                     }
                     Button("Close") {
-                        contextManager.closeContextApplications(context)
+                        contextManager.closeContext(context)
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal, 10)
