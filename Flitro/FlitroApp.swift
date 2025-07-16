@@ -117,6 +117,10 @@ struct ContextIconView: View {
                 RoundedRectangle(cornerRadius: 4)
                     .fill(backgroundColor)
                     .frame(width: size, height: size)
+            } else {
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(Color(NSColor.windowBackgroundColor))
+                    .frame(width: size, height: size)
             }
             
             if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
