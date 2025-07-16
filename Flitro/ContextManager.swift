@@ -77,8 +77,10 @@ class ContextManager: ObservableObject {
     @Published var contexts: [Context] = []
     @Published var activeContext: Context?
     
-    // Mapping from context UUID to Chrome window ID
-    private var chromeWindowIDs: [UUID: Int] = [:]
+    // Mapping from context UUID to Chrome window IDs
+    private var chromeWindowIDs: [UUID: [Int]] = [:]
+    // Mapping from context UUID to Safari window IDs
+    private var safariWindowIDs: [UUID: [Int]] = [:]
     
     private let appName = Bundle.main.bundleIdentifier ?? "Flitro"
     private let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
@@ -243,6 +245,8 @@ class ContextManager: ObservableObject {
 
         // Close any Chrome window opened for this context (if tracked)
         closeChromeWindowForContext(context.id)
+        // Close any Safari windows opened for this context (if tracked)
+        closeSafariWindowsForContext(context.id)
     }
     
     private func isSystemApp(_ bundleIdentifier: String) -> Bool {
@@ -295,28 +299,40 @@ class ContextManager: ObservableObject {
     }
     
     private func launchContextBrowserTabs(_ context: Context) {
-        // Determine if Chrome is the default browser
-        let isChromeDefault = getDefaultBrowser() == "chrome"
-        // Group tabs by browser, including 'default' tabs in Chrome if Chrome is default
-        let chromeTabs: [BrowserTab]
-        let otherTabs: [BrowserTab]
-        if isChromeDefault {
-            chromeTabs = context.browserTabs.filter { tab in
-                let b = tab.browser.lowercased()
-                return b == "chrome" || b == "default"
-            }
-            otherTabs = context.browserTabs.filter { tab in
-                let b = tab.browser.lowercased()
-                return b != "chrome" && b != "default"
-            }
-        } else {
-            chromeTabs = context.browserTabs.filter { $0.browser.lowercased() == "chrome" }
-            otherTabs = context.browserTabs.filter { $0.browser.lowercased() != "chrome" }
+        // Group tabs by explicit browser type
+        var chromeTabs = context.browserTabs.filter { $0.browser.lowercased() == "chrome" }
+        var safariTabs = context.browserTabs.filter { $0.browser.lowercased() == "safari" }
+        var firefoxTabs = context.browserTabs.filter { $0.browser.lowercased() == "firefox" }
+        var otherTabs = context.browserTabs.filter { !["chrome", "safari", "firefox", "default"].contains($0.browser.lowercased()) }
+        let defaultTabs = context.browserTabs.filter { $0.browser.lowercased() == "default" }
+
+        // Assign default tabs to the detected default browser
+        let defaultBrowser = getDefaultBrowser()
+        switch defaultBrowser {
+        case "chrome":
+            chromeTabs += defaultTabs
+        case "safari":
+            safariTabs += defaultTabs
+        case "firefox":
+            firefoxTabs += defaultTabs
+        default:
+            otherTabs += defaultTabs
         }
+
         // Open Chrome tabs using Apple Events
         if !chromeTabs.isEmpty {
             print("Launching Chrome tabs: \(chromeTabs)")
             _ = launchChromeTabsWithAppleEvents(chromeTabs, for: context.id)
+        }
+        // Open Safari tabs using Apple Events
+        if !safariTabs.isEmpty {
+            print("Launching Safari tabs: \(safariTabs)")
+            _ = launchSafariTabsWithAppleEvents(safariTabs, for: context.id)
+        }
+        // Open Firefox tabs
+        if !firefoxTabs.isEmpty {
+            print("Launching Firefox tabs: \(firefoxTabs)")
+            _ = launchFirefoxTabs(firefoxTabs, for: context.id)
         }
         // Open other tabs using the existing method
         for tab in otherTabs {
@@ -334,23 +350,97 @@ class ContextManager: ObservableObject {
         }
     }
     
-    private func launchSafariTabs(_ tabs: [BrowserTab], for contextId: UUID) -> Bool {
+    /// Launch Safari tabs using Apple Events (AppleScript), creating a new window and opening all tabs
+    private func launchSafariTabsWithAppleEvents(_ tabs: [BrowserTab], for contextId: UUID) -> Bool {
         guard !tabs.isEmpty else { return false }
-        let workspace = NSWorkspace.shared
-        guard let safariURL = workspace.urlForApplication(withBundleIdentifier: "com.apple.Safari") else {
-            return false
-        }
-        let config = NSWorkspace.OpenConfiguration()
-        for tab in tabs {
-            if let url = URL(string: tab.url) {
-                workspace.open([url], withApplicationAt: safariURL, configuration: config) { app, error in
-                    if let error = error {
-                        print("Failed to open URL in Safari: \(error)")
-                    }
-                }
+        let safariIsRunning = NSRunningApplication.runningApplications(withBundleIdentifier: "com.apple.Safari").count > 0
+        let urls = tabs.map { $0.url }.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+        guard !urls.isEmpty else { return false }
+        let urlList = urls.map { "\"\($0)\"" }.joined(separator: ", ")
+        let script: String
+        if urls.count == 1 {
+            if safariIsRunning {
+                script = """
+                tell application \"Safari\"
+                    activate
+                    make new document
+                    set URL of current tab of front window to \(urlList)
+                    set winId to id of front window
+                    return winId
+                end tell
+                """
+            } else {
+                script = """
+                tell application \"Safari\"
+                    activate
+                    delay 0.5
+                    try
+                        close window 1
+                    end try
+                    make new document
+                    set URL of current tab of front window to \(urlList)
+                    set winId to id of front window
+                    return winId
+                end tell
+                """
+            }
+        } else {
+            if safariIsRunning {
+                script = """
+                tell application \"Safari\"
+                    activate
+                    make new document
+                    set tabUrls to { \(urlList) }
+                    set URL of current tab of front window to (item 1 of tabUrls)
+                    repeat with i from 2 to count of tabUrls
+                        tell front window to set newTab to make new tab at end of tabs
+                        set URL of newTab to (item i of tabUrls)
+                    end repeat
+                    set winId to id of front window
+                    return winId
+                end tell
+                """
+            } else {
+                script = """
+                tell application \"Safari\"
+                    activate
+                    delay 0.5
+                    try
+                        close window 1
+                    end try
+                    make new document
+                    set tabUrls to { \(urlList) }
+                    set URL of current tab of front window to (item 1 of tabUrls)
+                    repeat with i from 2 to count of tabUrls
+                        tell front window to set newTab to make new tab at end of tabs
+                        set URL of newTab to (item i of tabUrls)
+                    end repeat
+                    set winId to id of front window
+                    return winId
+                end tell
+                """
             }
         }
-        return true
+        print(script)
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary? = nil
+            let result = appleScript.executeAndReturnError(&error)
+            if let error = error {
+                print("AppleScript error (Safari): \(error)")
+                return false
+            }
+            let winId = result.int32Value
+            if winId != 0 {
+                if safariWindowIDs[contextId] != nil {
+                    safariWindowIDs[contextId]?.append(Int(winId))
+                } else {
+                    safariWindowIDs[contextId] = [Int(winId)]
+                }
+                return true
+            }
+            return true // fallback, even if winId is 0
+        }
+        return false
     }
     
     private func launchChromeTabs(_ tabs: [BrowserTab], for contextId: UUID) -> Bool {
@@ -425,7 +515,11 @@ class ContextManager: ObservableObject {
             let result = appleScript.executeAndReturnError(&error)
             let winId = result.int32Value
             if winId != 0 {
-                chromeWindowIDs[contextId] = Int(winId)
+                if chromeWindowIDs[contextId] != nil {
+                    chromeWindowIDs[contextId]?.append(Int(winId))
+                } else {
+                    chromeWindowIDs[contextId] = [Int(winId)]
+                }
                 return true
             } else if let error = error {
                 print("AppleScript error: \(error)")
@@ -434,24 +528,54 @@ class ContextManager: ObservableObject {
         return false
     }
 
-    /// Close the Chrome window associated with a context (by window ID)
+    /// Close all Chrome windows associated with a context (by window IDs)
     func closeChromeWindowForContext(_ contextId: UUID) {
-        guard let winId = chromeWindowIDs[contextId] else { return }
+        guard let winIds = chromeWindowIDs[contextId], !winIds.isEmpty else { return }
+        let winIdList = winIds.map { String($0) }.joined(separator: ", ")
         let script = """
         tell application \"Google Chrome\"
-            if (exists window id \(winId)) then
-                close window id \(winId)
-            end if
+            repeat with wid in {\(winIdList)}
+                if (exists window id wid) then
+                    try
+                        close window id wid
+                    end try
+                end if
+            end repeat
         end tell
         """
         if let appleScript = NSAppleScript(source: script) {
             var error: NSDictionary? = nil
             appleScript.executeAndReturnError(&error)
             if let error = error {
-                print("Failed to close Chrome window: \(error)")
+                print("Failed to close Chrome window(s): \(error)")
             }
         }
         chromeWindowIDs.removeValue(forKey: contextId)
+    }
+    
+    /// Close the Safari windows associated with a context (by window IDs)
+    private func closeSafariWindowsForContext(_ contextId: UUID) {
+        guard let winIds = safariWindowIDs[contextId], !winIds.isEmpty else { return }
+        let winIdList = winIds.map { String($0) }.joined(separator: ", ")
+        let script = """
+        tell application \"Safari\"
+            repeat with wid in {\(winIdList)}
+                if (exists window id wid) then
+                    try
+                        close window id wid
+                    end try
+                end if
+            end repeat
+        end tell
+        """
+        if let appleScript = NSAppleScript(source: script) {
+            var error: NSDictionary? = nil
+            appleScript.executeAndReturnError(&error)
+            if let error = error {
+                print("Failed to close Safari window(s): \(error)")
+            }
+        }
+        safariWindowIDs.removeValue(forKey: contextId)
     }
     
     private func launchContextTerminals(_ context: Context) {

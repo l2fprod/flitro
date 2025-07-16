@@ -65,24 +65,26 @@ struct ContextSidebarView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // Permissions button at the bottom
-            VStack(spacing: 0) {
-                Divider()
-                Button(action: {
-                    permissionsManager.showPermissionDialog()
-                }) {
-                    HStack {
-                        Image(systemName: permissionsManager.hasAllPermissions ? "checkmark.shield" : "exclamationmark.shield")
-                            .foregroundColor(permissionsManager.hasAllPermissions ? .green : .orange)
-                        Text(permissionsManager.permissionStatusMessage)
-                            .font(.caption)
-                        Spacer()
+            if !permissionsManager.hasAllPermissions {
+                VStack(spacing: 0) {
+                    Divider()
+                    Button(action: {
+                        permissionsManager.showPermissionDialog()
+                    }) {
+                        HStack {
+                            Image(systemName: permissionsManager.hasAllPermissions ? "checkmark.shield" : "exclamationmark.shield")
+                                .foregroundColor(permissionsManager.hasAllPermissions ? .green : .orange)
+                            Text(permissionsManager.permissionStatusMessage)
+                                .font(.caption)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
+                    .buttonStyle(.plain)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .help("Configure permissions")
                 }
-                .buttonStyle(.plain)
-                .background(Color(NSColor.controlBackgroundColor))
-                .help("Configure accessibility and automation permissions")
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)

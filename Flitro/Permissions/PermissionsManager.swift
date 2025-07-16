@@ -1,6 +1,7 @@
 import Foundation
 import AppKit
 import ApplicationServices
+import Combine
 
 /// Manager class responsible for handling accessibility
 class PermissionsManager: ObservableObject {
@@ -8,8 +9,15 @@ class PermissionsManager: ObservableObject {
     
     @Published var hasAccessibilityPermission = false
     
+    private var cancellable: AnyCancellable?
+    
     private init() {
         checkPermissions()
+        // Listen for app activation to refresh permissions
+        cancellable = NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+            .sink { [weak self] _ in
+                self?.checkPermissions()
+            }
     }
     
     /// Check current permission status

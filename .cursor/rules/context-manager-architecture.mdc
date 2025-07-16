@@ -6,7 +6,8 @@ alwaysApply: false
 # ContextManager Architecture Rule
 
 ## Core Principle
-The [ContextManager.swift](mdc:Flitro/ContextManager.swift) must remain completely independent of UI code and should never import SwiftUI or any UI-related frameworks.
+- The [ContextManager.swift](mdc:Flitro/ContextManager.swift) must remain completely independent of UI code and should never import SwiftUI or any UI-related frameworks.
+- ContextManager must keep track of all applications, documents, windows it has opened for a given context so that when closing the context, it can correctly close the related applications, documents and windows.
 
 ## Allowed Imports
 ContextManager should only import:
