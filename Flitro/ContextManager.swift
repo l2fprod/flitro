@@ -18,6 +18,23 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
     var createdAt: Date = Date()
     var lastUsed: Date = Date()
     
+    /// Changes when any property relevant to UI changes.
+    var reactiveId: Int {
+        var hasher = Hasher()
+        hasher.combine(id)
+        hasher.combine(name)
+        hasher.combine(iconName)
+        hasher.combine(iconBackgroundColor)
+        hasher.combine(iconForegroundColor)
+        hasher.combine(isActive)
+        hasher.combine(applications.count)
+        hasher.combine(documents.count)
+        hasher.combine(browserTabs.count)
+        hasher.combine(terminalSessions.count)
+        // Add more properties as needed for UI reactivity
+        return hasher.finalize()
+    }
+    
     static func == (lhs: Context, rhs: Context) -> Bool {
         lhs.id == rhs.id
     }

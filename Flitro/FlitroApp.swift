@@ -83,7 +83,7 @@ struct MenuBarExtraContents: View {
             }
         }
         Divider()
-        ForEach(contextManager.contexts) { context in
+        ForEach(contextManager.contexts, id: \.reactiveId) { context in
             Menu {
                 ForEach(SwitchingMode.allCases, id: \.self) { mode in
                     Button(mode.rawValue) {
