@@ -72,6 +72,10 @@ struct ContextCardView: View {
                         RoundedRectangle(cornerRadius: 4)
                             .fill(backgroundColor)
                             .frame(width: 32, height: 32)
+                    } else {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color(NSColor.windowBackgroundColor))
+                            .frame(width: 32, height: 32)
                     }
                     if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
                         icon.regular
