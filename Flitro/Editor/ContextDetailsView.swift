@@ -95,7 +95,7 @@ struct ContextDetailsView: View {
                             )
                         }
                         // Terminals Card
-                        CardSection(title: "Terminals", items: context.terminalSessions.enumerated().map { (idx, term) in
+                        CardSection(title: "Shell Scripts", items: context.terminalSessions.enumerated().map { (idx, term) in
                             CardRow(icon: "terminal", title: term.title, subtitle: term.command ?? term.workingDirectory, onDelete: {
                                 contextManager.contexts[contextIdx].terminalSessions.removeAll { $0.id == term.id }
                                 contextManager.saveContexts()

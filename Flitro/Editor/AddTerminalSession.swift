@@ -23,7 +23,7 @@ struct AddTerminalDialog: View {
     
     var body: some View {
         GenericDialog(
-            title: "Add Terminal Session",
+            title: "Add Shell Script",
             isConfirmDisabled: viewModel.isConfirmDisabled,
             onCancel: onCancel,
             onConfirm: { _ in
