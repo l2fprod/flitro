@@ -44,7 +44,7 @@ security import build/certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_P
 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
 
 # Sign the app
-codesign --force --options runtime --keychain build.keychain --sign "$APPLE_CERTIFICATE_IDENTITY" build/Release/Flitro.app
+codesign --force --options runtime --keychain build.keychain --sign "$APPLE_CERTIFICATE_IDENTITY" --entitlements Flitro/Flitro.entitlements build/Release/Flitro.app
 
 # Create a zip file for notarization
 (cd build/Release && ditto -c -k --keepParent Flitro.app Flitro-to-notarize.zip)
