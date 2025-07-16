@@ -24,9 +24,11 @@ struct AddDocumentDialogContent: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Picker("Method", selection: $viewModel.selectedTab) {
+            Picker(selection: $viewModel.selectedTab) {
                 Text("Browse").tag(AddDocumentDialogViewModel.Tab.browse)
                 Text("Opened Documents").tag(AddDocumentDialogViewModel.Tab.opened)
+            } label: {
+                EmptyView()
             }
             .pickerStyle(.segmented)
             .padding(.bottom, 16)

@@ -36,18 +36,12 @@ struct AddBrowserTabDialogContent: View {
                         .foregroundColor(.secondary)
                 }
             
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Browser")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                
-                Picker("Browser", selection: $viewModel.selectedBrowser) {
-                    ForEach(viewModel.availableBrowsers, id: \.self) { browser in
-                        Text(browser).tag(browser)
-                    }
+            Picker("Browser", selection: $viewModel.selectedBrowser) {
+                ForEach(viewModel.availableBrowsers, id: \.self) { browser in
+                    Text(browser).tag(browser)
                 }
-                .pickerStyle(MenuPickerStyle())
             }
+            .pickerStyle(MenuPickerStyle())
         }
     }
 }

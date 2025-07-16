@@ -43,10 +43,12 @@ struct AddAppDialogContent: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Picker("Method", selection: $viewModel.selectedTab) {
+            Picker(selection: $viewModel.selectedTab) {
                 Text("Browse").tag(AddAppDialogViewModel.Tab.browse)
                 Text("Running Apps").tag(AddAppDialogViewModel.Tab.running)
                 Text("Manual").tag(AddAppDialogViewModel.Tab.manual)
+            } label: {
+                EmptyView()
             }
             .pickerStyle(.segmented)
             .padding(.bottom, 16)
