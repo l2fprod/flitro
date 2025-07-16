@@ -444,7 +444,6 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Flitro/Info.plist;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Flitro needs to control external applications to run automation in your contexts.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
