@@ -1,19 +1,22 @@
 # Flitro
 
-Flitro is a macOS productivity app that lets you quickly switch between different work contexts (sets of apps, documents, browser tabs, and terminal sessions) with a single click. It features a modern SwiftUI interface, a menu bar icon for quick access, and robust single-window management.
+Flitro is a powerful macOS productivity app designed to help you seamlessly switch between different work contexts with a single click. Effortlessly manage sets of apps, documents, browser tabs, and terminal sessions, so you can focus on what matters most—your work.
 
-## Features
+![](./web/public/image.png)
 
-- **Context Management:** Create, edit, and delete named contexts, each containing apps, documents, browser tabs, and terminal sessions.
-- **One-Click Switching:** Instantly switch your workspace to a saved context, with support for multiple switching modes (Replace All, Additive, Hybrid).
-- **Menu Bar Integration:** Access all your contexts and switch modes directly from the macOS menu bar.
-- **Single Window:** The main window is always reused and never duplicated. Closing the window hides it; you can reopen it from the menu bar or via keyboard shortcut.
-- **Modern UI:** Built with SwiftUI and AppKit for the best of both worlds. Supports unified toolbar and sidebar.
+## Key Features
+
+- **Instant Context Switching:** Instantly switch your workspace to a saved context, opening and closing the right apps, documents, browser tabs, and terminals for your task.
+- **Flexible Switching Modes:** Choose between Replace All, Additive, or Hybrid modes to tailor how your workspace changes.
+- **Easy Context Management:** Create, edit, and delete named contexts to match your workflows.
+- **Menu Bar Access:** Quickly access and switch contexts from the macOS menu bar, without interrupting your flow.
+- **Unified Window Experience:** The main window is always available from the menu bar or via keyboard shortcut, never duplicated, and hides when closed for a clutter-free desktop.
+- **Modern macOS Design:** Enjoy a beautiful, intuitive interface built with SwiftUI and AppKit, supporting unified toolbars and sidebars.
 
 ## Requirements
 
 - macOS 15 or later
-- Xcode 15 or later
+- Xcode 15 or later (for development)
 - Swift 5.9+
 
 ## Installation
@@ -26,23 +29,20 @@ Flitro is a macOS productivity app that lets you quickly switch between differen
 2. Open `Flitro.xcodeproj` in Xcode.
 3. Build and run the app (⌘R).
 
-## Usage
+## Getting Started
 
-- **Configure Contexts:** Open the main window ("Configure" from the menu bar or ⌘0) to add, edit, or remove contexts.
-- **Switch Contexts:** Use the menu bar icon to select a context and a switching mode. The app will open/close apps, documents, browser tabs, and terminals as defined.
-- **Hide/Show Main Window:** Closing the main window hides it. Use the menu bar "Configure" item or ⌘0 to bring it back.
+- **Configure Contexts:** Open the main window ("Configure" from the menu bar) to add, edit, or remove your custom contexts.
+- **Switch Contexts:** Use the menu bar icon to select a context and switching mode. Flitro will automatically set up your workspace as defined.
+- **Hide/Show Main Window:** Closing the main window hides it. Use the menu bar "Configure" item to bring it back.
 - **Quit:** Use the menu bar or standard macOS quit command (⌘Q).
 
-## Development Notes
+## Support & Feedback
 
-- The app uses a hybrid SwiftUI + AppKit approach for robust window management and modern UI.
-- The main window is managed by SwiftUI's `WindowGroup` for toolbar/sidebar support, but close events are intercepted in the AppDelegate to hide instead of close.
-- The menu bar uses `MenuBarExtra` and observes the shared `ContextManager` for live updates.
-- All state is managed via a singleton `ContextManager` injected as an `@EnvironmentObject`.
+Have questions, suggestions, or need help? [Open an issue](https://github.com/l2fprod/Flitro/issues) or start a discussion on GitHub.
 
 ## Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss what you would like to change.
+Pull requests are welcome! For major changes, please open an issue first to discuss your ideas.
 
 ## License
 
