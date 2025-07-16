@@ -4,7 +4,7 @@ class AddBrowserTabDialogViewModel: ObservableObject {
     @Published var tabTitle: String = ""
     @Published var tabURL: String = ""
     @Published var selectedBrowser: String = "Default"
-    let availableBrowsers = ["Safari", "Chrome", "Firefox", "Default"]
+    let availableBrowsers = ["Safari", "Chrome", /*"Firefox",*/ "Default"]
     
     func createBrowserTab() -> BrowserTab {
         let browser = selectedBrowser == "Default" ? "default" : selectedBrowser
