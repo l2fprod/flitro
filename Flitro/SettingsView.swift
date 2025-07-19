@@ -9,8 +9,8 @@ struct SettingsView: View {
             Toggle(isOn: $startAtLogin) {
                 Text("Start Flitro at login")
             }
-            .onChange(of: startAtLogin) { value in
-                setLaunchAtLogin(enabled: value)
+            .onChange(of: startAtLogin) {
+                setLaunchAtLogin(enabled: startAtLogin)
             }
         }
         .padding()

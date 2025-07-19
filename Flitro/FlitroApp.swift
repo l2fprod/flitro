@@ -41,6 +41,12 @@ struct ContentView: View {
             selectedContextID: $selectedContextID
         )
         .onAppear {
+            if ProcessInfo.processInfo.arguments.contains("-NSApplicationIsLoginItem") {
+                if let window = NSApp.windows.first {
+                    window.orderOut(nil)
+                    NSApp.setActivationPolicy(.accessory)
+                }
+            }
             if selectedContextID == nil, let first = contextManager.contexts.first {
                 selectedContextID = first.id
             }
