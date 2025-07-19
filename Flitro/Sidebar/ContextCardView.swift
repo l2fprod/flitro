@@ -7,7 +7,6 @@ import Foundation
 struct ContextCardView: View {
     let context: Context
     let isSelected: Bool
-    let onSelect: () -> Void
     let onIconChange: (String?, String?, String?) -> Void
     
     @State private var isHovered = false
@@ -109,7 +108,6 @@ struct ContextCardView: View {
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
-        .onTapGesture { onSelect() }
         .onHover { hovering in
             isHovered = hovering
         }

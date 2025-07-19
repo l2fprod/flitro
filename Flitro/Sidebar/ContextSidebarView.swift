@@ -44,7 +44,6 @@ struct ContextSidebarView: View {
                     ContextCardView(
                         context: context,
                         isSelected: context.id == selectedContextID,
-                        onSelect: { selectedContextID = context.id },
                         onIconChange: { iconName, backgroundColorHex, foregroundColorHex in
                             if let index = contextManager.contexts.firstIndex(where: { $0.id == context.id }) {
                                 contextManager.contexts[index].iconName = iconName
