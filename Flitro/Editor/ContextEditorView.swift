@@ -81,7 +81,7 @@ struct ContextEditorView: View {
                                 // Add as application
                                 if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
                                     let appItem = AppItem(name: url.deletingPathExtension().lastPathComponent, bundleIdentifier: bundleId, windowTitle: nil)
-                                    contextManager.contexts[contextIndex].applications.append(appItem)
+                                    contextManager.contexts[contextIndex].items.append(.application(appItem))
                                     contextManager.saveContexts()
                                     print("Added application: \(appItem.name)")
                                 }
@@ -92,7 +92,7 @@ struct ContextEditorView: View {
                                     command: url.path,
                                     title: url.deletingPathExtension().lastPathComponent
                                 )
-                                contextManager.contexts[contextIndex].terminalSessions.append(session)
+                                contextManager.contexts[contextIndex].items.append(.terminalSession(session))
                                 contextManager.saveContexts()
                                 print("Added terminal session for script: \(session.title)")
                             } else {
@@ -109,7 +109,7 @@ struct ContextEditorView: View {
                                     application: "",
                                     bookmark: bookmark
                                 )
-                                contextManager.contexts[contextIndex].documents.append(document)
+                                contextManager.contexts[contextIndex].items.append(.document(document))
                                 contextManager.saveContexts()
                                 print("Added document: \(document.name)")
                             }
@@ -137,7 +137,7 @@ struct ContextEditorView: View {
                                 command: url.path,
                                 title: url.deletingPathExtension().lastPathComponent
                             )
-                            contextManager.contexts[contextIndex].terminalSessions.append(session)
+                            contextManager.contexts[contextIndex].items.append(.terminalSession(session))
                             contextManager.saveContexts()
                             print("Added terminal session for script: \(session.title)")
                         }
@@ -149,13 +149,13 @@ struct ContextEditorView: View {
                     if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
                         let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
                         DispatchQueue.main.async {
-                            contextManager.contexts[contextIndex].browserTabs.append(browserTab)
+                            contextManager.contexts[contextIndex].items.append(.browserTab(browserTab))
                             contextManager.saveContexts()
                         }
                     } else if let url = item as? URL {
                         let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
                         DispatchQueue.main.async {
-                            contextManager.contexts[contextIndex].browserTabs.append(browserTab)
+                            contextManager.contexts[contextIndex].items.append(.browserTab(browserTab))
                             contextManager.saveContexts()
                         }
                     }
@@ -169,7 +169,7 @@ struct ContextEditorView: View {
                         if let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)) {
                             let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
                             DispatchQueue.main.async {
-                                contextManager.contexts[contextIndex].browserTabs.append(browserTab)
+                                contextManager.contexts[contextIndex].items.append(.browserTab(browserTab))
                                 contextManager.saveContexts()
                                 print("Added browser tab: \(browserTab.title)")
                             }

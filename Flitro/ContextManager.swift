@@ -4,13 +4,55 @@ import ApplicationServices
 
 // MARK: - Data Models
 
+enum ContextItem: Codable, Equatable, Hashable {
+    case application(AppItem)
+    case document(DocumentItem)
+    case browserTab(BrowserTab)
+    case terminalSession(TerminalSession)
+
+    enum CodingKeys: String, CodingKey {
+        case type, value
+    }
+    enum ItemType: String, Codable {
+        case application, document, browserTab, terminalSession
+    }
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(ItemType.self, forKey: .type)
+        switch type {
+        case .application:
+            self = .application(try container.decode(AppItem.self, forKey: .value))
+        case .document:
+            self = .document(try container.decode(DocumentItem.self, forKey: .value))
+        case .browserTab:
+            self = .browserTab(try container.decode(BrowserTab.self, forKey: .value))
+        case .terminalSession:
+            self = .terminalSession(try container.decode(TerminalSession.self, forKey: .value))
+        }
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case .application(let app):
+            try container.encode(ItemType.application, forKey: .type)
+            try container.encode(app, forKey: .value)
+        case .document(let doc):
+            try container.encode(ItemType.document, forKey: .type)
+            try container.encode(doc, forKey: .value)
+        case .browserTab(let tab):
+            try container.encode(ItemType.browserTab, forKey: .type)
+            try container.encode(tab, forKey: .value)
+        case .terminalSession(let session):
+            try container.encode(ItemType.terminalSession, forKey: .type)
+            try container.encode(session, forKey: .value)
+        }
+    }
+}
+
 struct Context: Identifiable, Codable, Equatable, Hashable {
     var id: UUID = UUID()
     var name: String
-    var applications: [AppItem]
-    var documents: [DocumentItem]
-    var browserTabs: [BrowserTab]
-    var terminalSessions: [TerminalSession]
+    var items: [ContextItem]
     var iconName: String? = nil
     var iconBackgroundColor: String? = nil // Optional hex color string
     var iconForegroundColor: String? = nil // Optional hex color string
@@ -27,16 +69,62 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
         hasher.combine(iconBackgroundColor)
         hasher.combine(iconForegroundColor)
         hasher.combine(isActive)
-        hasher.combine(applications.count)
-        hasher.combine(documents.count)
-        hasher.combine(browserTabs.count)
-        hasher.combine(terminalSessions.count)
+        hasher.combine(items.count)
         // Add more properties as needed for UI reactivity
         return hasher.finalize()
     }
     
     static func == (lhs: Context, rhs: Context) -> Bool {
         lhs.id == rhs.id
+    }
+}
+
+// Migration helper for old contexts.json
+extension Context {
+    // Accepts a dictionary from JSONSerialization
+    static func migrate(from legacy: [String: Any]) -> Context? {
+        guard let name = legacy["name"] as? String else { return nil }
+        let id = (legacy["id"] as? String).flatMap { UUID(uuidString: $0) } ?? UUID()
+        let iconName = legacy["iconName"] as? String
+        let iconBackgroundColor = legacy["iconBackgroundColor"] as? String
+        let iconForegroundColor = legacy["iconForegroundColor"] as? String
+        let isActive = legacy["isActive"] as? Bool ?? false
+        let createdAt = (legacy["createdAt"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
+        let lastUsed = (legacy["lastUsed"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
+        var items: [ContextItem] = []
+        if let apps = legacy["applications"] as? [[String: Any]] {
+            for appDict in apps {
+                if let data = try? JSONSerialization.data(withJSONObject: appDict),
+                   let app = try? JSONDecoder().decode(AppItem.self, from: data) {
+                    items.append(.application(app))
+                }
+            }
+        }
+        if let docs = legacy["documents"] as? [[String: Any]] {
+            for docDict in docs {
+                if let data = try? JSONSerialization.data(withJSONObject: docDict),
+                   let doc = try? JSONDecoder().decode(DocumentItem.self, from: data) {
+                    items.append(.document(doc))
+                }
+            }
+        }
+        if let tabs = legacy["browserTabs"] as? [[String: Any]] {
+            for tabDict in tabs {
+                if let data = try? JSONSerialization.data(withJSONObject: tabDict),
+                   let tab = try? JSONDecoder().decode(BrowserTab.self, from: data) {
+                    items.append(.browserTab(tab))
+                }
+            }
+        }
+        if let terms = legacy["terminalSessions"] as? [[String: Any]] {
+            for termDict in terms {
+                if let data = try? JSONSerialization.data(withJSONObject: termDict),
+                   let term = try? JSONDecoder().decode(TerminalSession.self, from: data) {
+                    items.append(.terminalSession(term))
+                }
+            }
+        }
+        return Context(id: id, name: name, items: items, iconName: iconName, iconBackgroundColor: iconBackgroundColor, iconForegroundColor: iconForegroundColor, isActive: isActive, createdAt: createdAt, lastUsed: lastUsed)
     }
 }
 
@@ -120,13 +208,7 @@ class ContextManager: ObservableObject {
     func createContext(name: String, applications: [AppItem] = [], documents: [DocumentItem] = [], browserTabs: [BrowserTab] = [], terminalSessions: [TerminalSession] = [], iconName: String? = nil, iconBackgroundColor: String? = nil, iconForegroundColor: String? = nil) {
         let context = Context(
             name: name,
-            applications: applications,
-            documents: documents,
-            browserTabs: browserTabs,
-            terminalSessions: terminalSessions,
-            iconName: iconName,
-            iconBackgroundColor: iconBackgroundColor,
-            iconForegroundColor: iconForegroundColor
+            items: applications.map { .application($0) } + documents.map { .document($0) } + browserTabs.map { .browserTab($0) } + terminalSessions.map { .terminalSession($0) }
         )
         contexts.append(context)
         saveContexts()
@@ -163,13 +245,7 @@ class ContextManager: ObservableObject {
     func captureCurrentWorkspace() -> Context {
         var context = Context(
             name: "New Context",
-            applications: [],
-            documents: [],
-            browserTabs: [],
-            terminalSessions: [],
-            iconName: nil,
-            iconBackgroundColor: nil,
-            iconForegroundColor: nil
+            items: []
         )
         
         // Capture running applications
@@ -186,7 +262,7 @@ class ContextManager: ObservableObject {
                     bundleIdentifier: bundleId,
                     windowTitle: nil
                 )
-                context.applications.append(appItem)
+                context.items.append(.application(appItem))
             }
         }
         
@@ -245,18 +321,30 @@ class ContextManager: ObservableObject {
         let workspace = NSWorkspace.shared
         let runningApps = workspace.runningApplications
         
-        for contextApp in context.applications {
-            for runningApp in runningApps {
-                if let bundleId = runningApp.bundleIdentifier,
-                   bundleId == contextApp.bundleIdentifier {
-                    if !isSystemApp(bundleId) {
-                        let script = "tell application id \"\(bundleId)\" to quit"
-                        if let appleScript = NSAppleScript(source: script) {
-                            var error: NSDictionary? = nil
-                            appleScript.executeAndReturnError(&error)
+        for item in context.items {
+            switch item {
+            case .application(let app):
+                for runningApp in runningApps {
+                    if let bundleId = runningApp.bundleIdentifier,
+                       bundleId == app.bundleIdentifier {
+                        if !isSystemApp(bundleId) {
+                            let script = "tell application id \"\(bundleId)\" to quit"
+                            if let appleScript = NSAppleScript(source: script) {
+                                var error: NSDictionary? = nil
+                                appleScript.executeAndReturnError(&error)
+                            }
                         }
                     }
                 }
+            case .browserTab:
+                // No-op here; handled by closeChromeWindowForContext/closeSafariWindowsForContext below
+                break
+            case .document:
+                // Do nothing (do not open documents on close)
+                break
+            case .terminalSession:
+                // Do nothing (do not launch terminal sessions on close)
+                break
             }
         }
 
@@ -282,14 +370,24 @@ class ContextManager: ObservableObject {
     }
     
     private func launchContextApplications(_ context: Context) {
-        for app in context.applications {
-            openApp(app)
+        for item in context.items {
+            switch item {
+            case .application(let app):
+                openApp(app)
+            default:
+                break // No other application-specific launch logic here
+            }
         }
     }
     
     private func launchContextDocuments(_ context: Context) {
-        for doc in context.documents {
-            openDocument(doc)
+        for item in context.items {
+            switch item {
+            case .document(let doc):
+                openDocument(doc)
+            default:
+                break // No other document-specific launch logic here
+            }
         }
     }
 
@@ -317,11 +415,36 @@ class ContextManager: ObservableObject {
     
     private func launchContextBrowserTabs(_ context: Context) {
         // Group tabs by explicit browser type
-        var chromeTabs = context.browserTabs.filter { $0.browser.lowercased() == "chrome" }
-        var safariTabs = context.browserTabs.filter { $0.browser.lowercased() == "safari" }
-        var firefoxTabs = context.browserTabs.filter { $0.browser.lowercased() == "firefox" }
-        var otherTabs = context.browserTabs.filter { !["chrome", "safari", "firefox", "default"].contains($0.browser.lowercased()) }
-        let defaultTabs = context.browserTabs.filter { $0.browser.lowercased() == "default" }
+        var chromeTabs = context.items.compactMap { item -> BrowserTab? in
+            if case .browserTab(let tab) = item, tab.browser.lowercased() == "chrome" {
+                return tab
+            }
+            return nil
+        }
+        var safariTabs = context.items.compactMap { item -> BrowserTab? in
+            if case .browserTab(let tab) = item, tab.browser.lowercased() == "safari" {
+                return tab
+            }
+            return nil
+        }
+        var firefoxTabs = context.items.compactMap { item -> BrowserTab? in
+            if case .browserTab(let tab) = item, tab.browser.lowercased() == "firefox" {
+                return tab
+            }
+            return nil
+        }
+        var otherTabs = context.items.compactMap { item -> BrowserTab? in
+            if case .browserTab(let tab) = item, !["chrome", "safari", "firefox", "default"].contains(tab.browser.lowercased()) {
+                return tab
+            }
+            return nil
+        }
+        let defaultTabs = context.items.compactMap { item -> BrowserTab? in
+            if case .browserTab(let tab) = item, tab.browser.lowercased() == "default" {
+                return tab
+            }
+            return nil
+        }
 
         // Assign default tabs to the detected default browser
         let defaultBrowser = getDefaultBrowser()
@@ -596,27 +719,32 @@ class ContextManager: ObservableObject {
     }
     
     private func launchContextTerminals(_ context: Context) {
-        for session in context.terminalSessions {
-            let commandToRun: String
-            if let command = session.command, !command.isEmpty {
-                commandToRun = command
-            } else {
-                continue // Skip if no command
-            }
-            let workingDir = session.workingDirectory
-            // AppleScript to open Terminal and run the command in the working directory
-            let script = """
-            tell application \"Terminal\"
-                activate
-                do script \"cd \" & quoted form of \"\(workingDir)\" & \"; \(commandToRun)\"
-            end tell
-            """
-            if let appleScript = NSAppleScript(source: script) {
-                var error: NSDictionary? = nil
-                appleScript.executeAndReturnError(&error)
-                if let error = error {
-                    print("Failed to launch terminal session: \(error)")
+        for item in context.items {
+            switch item {
+            case .terminalSession(let session):
+                let commandToRun: String
+                if let command = session.command, !command.isEmpty {
+                    commandToRun = command
+                } else {
+                    continue // Skip if no command
                 }
+                let workingDir = session.workingDirectory
+                // AppleScript to open Terminal and run the command in the working directory
+                let script = """
+                tell application \"Terminal\"
+                    activate
+                    do script \"cd \" & quoted form of \"\(workingDir)\" & \"; \(commandToRun)\"
+                end tell
+                """
+                if let appleScript = NSAppleScript(source: script) {
+                    var error: NSDictionary? = nil
+                    appleScript.executeAndReturnError(&error)
+                    if let error = error {
+                        print("Failed to launch terminal session: \(error)")
+                    }
+                }
+            default:
+                break // No other terminal-specific launch logic here
             }
         }
     }
@@ -698,11 +826,23 @@ class ContextManager: ObservableObject {
     private func loadContexts() {
         do {
             let data = try Data(contentsOf: contextsFileURL)
-            contexts = try JSONDecoder().decode([Context].self, from: data)
-            activeContext = contexts.first { $0.isActive }
+            do {
+                // Try decoding as new format
+                let decoded = try JSONDecoder().decode([Context].self, from: data)
+                self.contexts = decoded
+            } catch {
+                // Try to migrate from old format
+                if let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
+                    let migrated = jsonArray.compactMap { Context.migrate(from: $0) }
+                    self.contexts = migrated
+                    // Save back in new format
+                    saveContexts()
+                } else {
+                    print("Failed to decode or migrate contexts.json: \(error)")
+                }
+            }
         } catch {
-            print("Failed to load contexts: \(error)")
-            initializeSampleData()
+            print("No existing contexts.json found or failed to read: \(error)")
         }
     }
     
@@ -710,35 +850,19 @@ class ContextManager: ObservableObject {
         let sampleContexts = [
             Context(
                 name: "Project A",
-                applications: [
-                    AppItem(name: "Xcode", bundleIdentifier: "com.apple.dt.Xcode"),
-                    AppItem(name: "Figma", bundleIdentifier: "com.figma.Desktop"),
-                    AppItem(name: "Slack", bundleIdentifier: "com.tinyspeck.slackmacgap")
-                ],
-                documents: [],
-                browserTabs: [
-                    BrowserTab(title: "Swift Documentation", url: "https://docs.swift.org", browser: "Safari"),
-                    BrowserTab(title: "GitHub - Project A", url: "https://github.com/user/project-a", browser: "Safari")
-                ],
-                terminalSessions: [
-                    TerminalSession(workingDirectory: "/Users/user/Projects/ProjectA", command: "npm run dev", title: "Development Server")
-                ],
-                iconName: "code"
+                items: [
+                    .application(AppItem(name: "Xcode", bundleIdentifier: "com.apple.dt.Xcode")),
+                    .application(AppItem(name: "Figma", bundleIdentifier: "com.figma.Desktop")),
+                    .application(AppItem(name: "Slack", bundleIdentifier: "com.tinyspeck.slackmacgap"))
+                ]
             ),
             Context(
                 name: "Team Management",
-                applications: [
-                    AppItem(name: "Slack", bundleIdentifier: "com.apple.tinyspeck.slackmacgap"),
-                    AppItem(name: "Notion", bundleIdentifier: "notion.id"),
-                    AppItem(name: "Calendar", bundleIdentifier: "com.apple.iCal")
-                ],
-                documents: [],
-                browserTabs: [
-                    BrowserTab(title: "Team Dashboard", url: "https://notion.so/team-dashboard", browser: "Safari"),
-                    BrowserTab(title: "HR Portal", url: "https://company.com/hr", browser: "Safari")
-                ],
-                terminalSessions: [],
-                iconName: "users"
+                items: [
+                    .application(AppItem(name: "Slack", bundleIdentifier: "com.apple.tinyspeck.slackmacgap")),
+                    .application(AppItem(name: "Notion", bundleIdentifier: "notion.id")),
+                    .application(AppItem(name: "Calendar", bundleIdentifier: "com.apple.iCal"))
+                ]
             )
         ]
         

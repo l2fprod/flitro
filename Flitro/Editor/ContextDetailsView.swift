@@ -23,14 +23,16 @@ struct ContextDetailsView: View {
                         // Applications Card
                         CardSection(
                             title: "Applications",
-                            items: context.applications.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.enumerated().map { (idx, app) in
+                            items: context.items.compactMap { item -> AppItem? in
+                                if case .application(let app) = item { return app } else { return nil }
+                            }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.enumerated().map { (idx, app) in
                                 CardRow(
                                     icon: "folder",
                                     title: app.name,
                                     subtitle: app.bundleIdentifier,
                                     onOpen: { contextManager.openApp(app) },
                                     onDelete: {
-                                        contextManager.contexts[contextIdx].applications.removeAll { $0.id == app.id }
+                                        contextManager.contexts[contextIdx].items.removeAll { if case .application(let a) = $0 { return a.id == app.id } else { return false } }
                                     }
                                 )
                             },
@@ -41,14 +43,16 @@ struct ContextDetailsView: View {
                         // Documents Card
                         CardSection(
                             title: "Documents",
-                            items: context.documents.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.enumerated().map { (idx, doc) in
+                            items: context.items.compactMap { item -> DocumentItem? in
+                                if case .document(let doc) = item { return doc } else { return nil }
+                            }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.enumerated().map { (idx, doc) in
                                 CardRow(
                                     icon: "doc",
                                     title: doc.name,
                                     subtitle: doc.filePath,
                                     onOpen: { contextManager.openDocument(doc) },
                                     onDelete: {
-                                        contextManager.contexts[contextIdx].documents.removeAll { $0.id == doc.id }
+                                        contextManager.contexts[contextIdx].items.removeAll { if case .document(let d) = $0 { return d.id == doc.id } else { return false } }
                                     }
                                 )
                             },
@@ -59,7 +63,7 @@ struct ContextDetailsView: View {
                         .sheet(isPresented: $showAddDocumentDialog) {
                             AddDocumentDialog(
                                 onAdd: { newDoc in
-                                    contextManager.contexts[contextIdx].documents.append(newDoc)
+                                    contextManager.contexts[contextIdx].items.append(.document(newDoc))
                                     showAddDocumentDialog = false
                                 },
                                 onCancel: { showAddDocumentDialog = false }
@@ -68,14 +72,16 @@ struct ContextDetailsView: View {
                         // Browser Tabs Card
                         CardSection(
                             title: "Browser Tabs", 
-                            items: context.browserTabs.enumerated().map { (idx, tab) in
+                            items: context.items.compactMap { item -> BrowserTab? in
+                                if case .browserTab(let tab) = item { return tab } else { return nil }
+                            }.enumerated().map { (idx, tab) in
                                 CardRow(
                                     icon: "globe",
                                     title: tab.title,
                                     subtitle: tab.url,
                                     onOpen: { contextManager.openBrowserTab(tab) },
                                     onDelete: {
-                                        contextManager.contexts[contextIdx].browserTabs.removeAll { $0.id == tab.id }
+                                        contextManager.contexts[contextIdx].items.removeAll { if case .browserTab(let t) = $0 { return t.id == tab.id } else { return false } }
                                         contextManager.saveContexts()
                                     }
                                 )
@@ -87,7 +93,7 @@ struct ContextDetailsView: View {
                         .sheet(isPresented: $showAddBrowserTabDialog) {
                             AddBrowserTabDialog(
                                 onAdd: { newTab in
-                                    contextManager.contexts[contextIdx].browserTabs.append(newTab)
+                                    contextManager.contexts[contextIdx].items.append(.browserTab(newTab))
                                     contextManager.saveContexts()
                                     showAddBrowserTabDialog = false
                                 },
@@ -95,9 +101,11 @@ struct ContextDetailsView: View {
                             )
                         }
                         // Terminals Card
-                        CardSection(title: "Shell Scripts", items: context.terminalSessions.enumerated().map { (idx, term) in
+                        CardSection(title: "Shell Scripts", items: context.items.compactMap { item -> TerminalSession? in
+                            if case .terminalSession(let term) = item { return term } else { return nil }
+                        }.enumerated().map { (idx, term) in
                             CardRow(icon: "terminal", title: term.title, subtitle: term.command ?? term.workingDirectory, onDelete: {
-                                contextManager.contexts[contextIdx].terminalSessions.removeAll { $0.id == term.id }
+                                contextManager.contexts[contextIdx].items.removeAll { if case .terminalSession(let t) = $0 { return t.id == term.id } else { return false } }
                                 contextManager.saveContexts()
                             })
                         }, onAdd: {
@@ -106,7 +114,7 @@ struct ContextDetailsView: View {
                         .sheet(isPresented: $showAddTerminalDialog) {
                             AddTerminalDialog(
                                 onAdd: { newTerm in
-                                    contextManager.contexts[contextIdx].terminalSessions.append(newTerm)
+                                    contextManager.contexts[contextIdx].items.append(.terminalSession(newTerm))
                                     contextManager.saveContexts()
                                     showAddTerminalDialog = false
                                 },
@@ -123,7 +131,7 @@ struct ContextDetailsView: View {
                 .sheet(isPresented: $showAddAppDialog) {
                     AddAppDialog(
                         onAdd: { newApp in
-                            contextManager.contexts[contextIdx].applications.append(newApp)
+                            contextManager.contexts[contextIdx].items.append(.application(newApp))
                             contextManager.saveContexts()
                             showAddAppDialog = false
                         },

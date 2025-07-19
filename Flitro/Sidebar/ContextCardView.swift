@@ -28,7 +28,7 @@ struct ContextCardView: View {
     }
     
     var itemCountText: String {
-        let total = context.applications.count + context.documents.count + context.browserTabs.count + context.terminalSessions.count
+        let total = context.items.count
         return "\(total) items"
     }
     

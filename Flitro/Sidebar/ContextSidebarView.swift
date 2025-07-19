@@ -14,7 +14,7 @@ struct ContextSidebarView: View {
                     .fontWeight(.semibold)
                 Spacer()
                 Button(action: {
-                    let newContext = Context(name: "New Context", applications: [], documents: [], browserTabs: [], terminalSessions: [], iconName: nil)
+                    let newContext = Context(name: "New Context", items: [], iconName: nil)
                     contextManager.contexts.append(newContext)
                     selectedContextID = newContext.id
                 }) {
