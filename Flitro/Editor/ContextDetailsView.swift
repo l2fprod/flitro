@@ -296,16 +296,7 @@ struct ContextDetailsView: View {
     }
     
     private func onOpenAction(for item: ContextItem, contextIdx: Int) -> (() -> Void)? {
-        switch item {
-        case .application(let app):
-            return { contextManager.openApp(app) }
-        case .document(let doc):
-            return { contextManager.openDocument(doc) }
-        case .browserTab(let tab):
-            return { contextManager.openBrowserTab(tab) }
-        case .terminalSession:
-            return nil
-        }
+        return { contextManager.openItem(item) }
     }
     
     private func makeRow(for item: ContextItem, contextIdx: Int, itemIndex: Int) -> some View {
