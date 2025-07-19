@@ -52,7 +52,7 @@ enum ContextItem: Codable, Equatable, Hashable {
 struct Context: Identifiable, Codable, Equatable, Hashable {
     var id: UUID = UUID()
     var name: String
-    var items: [ContextItem]
+    private(set) var items: [ContextItem]
     var iconName: String? = nil
     var iconBackgroundColor: String? = nil // Optional hex color string
     var iconForegroundColor: String? = nil // Optional hex color string
@@ -76,6 +76,17 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
     
     static func == (lhs: Context, rhs: Context) -> Bool {
         lhs.id == rhs.id
+    }
+
+    // Mutating item methods
+    mutating func addItem(_ item: ContextItem) {
+        items.append(item)
+    }
+    mutating func removeItem(at index: Int) {
+        items.remove(at: index)
+    }
+    mutating func moveItems(fromOffsets: IndexSet, toOffset: Int) {
+        items.move(fromOffsets: fromOffsets, toOffset: toOffset)
     }
 }
 
@@ -177,9 +188,6 @@ enum SwitchingMode: String, CaseIterable {
 
 // MARK: - Abstractions for Generic Item Handling
 
-// Remove all browser/document-specific open/close logic and AppleScript from ContextManager
-// Only keep logic for terminal sessions and generic context management
-
 // MARK: - Context Manager
 
 class ContextManager: ObservableObject {
@@ -202,56 +210,30 @@ class ContextManager: ObservableObject {
     private var contextsFileURL: URL {
         appDirectory.appendingPathComponent("contexts.json")
     }
-
-    // Move getDefaultBrowser here so it's in scope
-    private func getDefaultBrowser() -> String {
+    
+    /// Helper to get the bundle identifier of the system default browser
+    private func getDefaultBrowserBundleId() -> String? {
         let workspace = NSWorkspace.shared
         guard let httpURL = URL(string: "http://example.com") else {
-            return "other"
+            return nil
         }
         if let appURL = workspace.urlForApplication(toOpen: httpURL) {
-            let bundleID = Bundle(url: appURL)?.bundleIdentifier ?? ""
-            switch bundleID {
-            case "com.google.Chrome":
-                return "chrome"
-            case "com.apple.Safari":
-                return "safari"
-            case "org.mozilla.firefox":
-                return "firefox"
-            default:
-                return "other"
-            }
+            return Bundle(url: appURL)?.bundleIdentifier
         }
-        return "other"
+        return nil
     }
-    
+
     init() {
         loadContexts()
     }
     
     // MARK: - Context Management
     
-    func createContext(name: String, applications: [AppItem] = [], documents: [DocumentItem] = [], browserTabs: [BrowserTab] = [], terminalSessions: [TerminalSession] = [], iconName: String? = nil, iconBackgroundColor: String? = nil, iconForegroundColor: String? = nil) {
-        let context = Context(
-            name: name,
-            items: applications.map { .application($0) } + documents.map { .document($0) } + browserTabs.map { .browserTab($0) } + terminalSessions.map { .terminalSession($0) }
-        )
-        contexts.append(context)
-        saveContexts()
-    }
-    
     func addContext(_ context: Context) {
         contexts.append(context)
         saveContexts()
     }
-    
-    func updateContext(_ context: Context) {
-        if let index = contexts.firstIndex(where: { $0.id == context.id }) {
-            contexts[index] = context
-            saveContexts()
-        }
-    }
-    
+  
     func deleteContext(_ context: Context) {
         contexts.removeAll { $0.id == context.id }
         if activeContext?.id == context.id {
@@ -260,41 +242,6 @@ class ContextManager: ObservableObject {
         // Remove all launchers for the context
         contextLaunchers.removeValue(forKey: context.id)
         saveContexts()
-    }
-    
-    func getContext(by id: UUID) -> Context? {
-        return contexts.first { $0.id == id }
-    }
-    
-    func getContextIndex(by id: UUID) -> Int? {
-        return contexts.firstIndex { $0.id == id }
-    }
-    
-    func captureCurrentWorkspace() -> Context {
-        var context = Context(
-            name: "New Context",
-            items: []
-        )
-        
-        // Capture running applications
-        let workspace = NSWorkspace.shared
-        let runningApps = workspace.runningApplications
-        
-        for app in runningApps {
-            if let bundleId = app.bundleIdentifier,
-               let appName = app.localizedName,
-               !app.isHidden && app.activationPolicy == .regular {
-                
-                let appItem = AppItem(
-                    name: appName,
-                    bundleIdentifier: bundleId,
-                    windowTitle: nil
-                )
-                context.items.append(.application(appItem))
-            }
-        }
-        
-        return context
     }
     
     // MARK: - Context Switching
@@ -337,6 +284,8 @@ class ContextManager: ObservableObject {
             case "chrome": return "com.google.Chrome"
             case "safari": return "com.apple.Safari"
             case "firefox": return "org.mozilla.firefox"
+            case "default", "":
+                return getDefaultBrowserBundleId()
             default: return nil
             }
         case .terminalSession:
@@ -459,30 +408,6 @@ class ContextManager: ObservableObject {
             print("No existing contexts.json found or failed to read: \(error)")
         }
     }
-    
-    private func initializeSampleData() {
-        let sampleContexts = [
-            Context(
-                name: "Project A",
-                items: [
-                    .application(AppItem(name: "Xcode", bundleIdentifier: "com.apple.dt.Xcode")),
-                    .application(AppItem(name: "Figma", bundleIdentifier: "com.figma.Desktop")),
-                    .application(AppItem(name: "Slack", bundleIdentifier: "com.tinyspeck.slackmacgap"))
-                ]
-            ),
-            Context(
-                name: "Team Management",
-                items: [
-                    .application(AppItem(name: "Slack", bundleIdentifier: "com.apple.tinyspeck.slackmacgap")),
-                    .application(AppItem(name: "Notion", bundleIdentifier: "notion.id")),
-                    .application(AppItem(name: "Calendar", bundleIdentifier: "com.apple.iCal"))
-                ]
-            )
-        ]
-        
-        contexts = sampleContexts
-        saveContexts()
-    }
 }
 
 extension ContextManager {
@@ -513,5 +438,23 @@ extension ContextManager {
                 }
             }
         }
+    }
+} 
+
+extension ContextManager {
+    func addItem(_ item: ContextItem, to contextID: UUID) {
+        guard let idx = contexts.firstIndex(where: { $0.id == contextID }) else { return }
+        contexts[idx].addItem(item)
+        saveContexts()
+    }
+    func removeItem(at itemIndex: Int, from contextID: UUID) {
+        guard let idx = contexts.firstIndex(where: { $0.id == contextID }) else { return }
+        contexts[idx].removeItem(at: itemIndex)
+        saveContexts()
+    }
+    func moveItems(fromOffsets: IndexSet, toOffset: Int, in contextID: UUID) {
+        guard let idx = contexts.firstIndex(where: { $0.id == contextID }) else { return }
+        contexts[idx].moveItems(fromOffsets: fromOffsets, toOffset: toOffset)
+        saveContexts()
     }
 } 

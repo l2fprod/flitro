@@ -76,8 +76,7 @@ struct UniversalDropHandler {
                             if url.pathExtension == "app" {
                                 if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
                                     let appItem = AppItem(name: url.deletingPathExtension().lastPathComponent, bundleIdentifier: bundleId, windowTitle: nil)
-                                    contextManager.contexts[contextIndex].items.append(.application(appItem))
-                                    contextManager.saveContexts()
+                                    contextManager.addItem(.application(appItem), to: contextManager.contexts[contextIndex].id)
                                     print("Added application: \(appItem.name)")
                                 }
                             } else if url.pathExtension == "sh" {
@@ -86,8 +85,7 @@ struct UniversalDropHandler {
                                     command: url.path,
                                     title: url.deletingPathExtension().lastPathComponent
                                 )
-                                contextManager.contexts[contextIndex].items.append(.terminalSession(session))
-                                contextManager.saveContexts()
+                                contextManager.addItem(.terminalSession(session), to: contextManager.contexts[contextIndex].id)
                                 print("Added terminal session for script: \(session.title)")
                                 var bookmark: Data? = nil
                                 do {
@@ -101,8 +99,7 @@ struct UniversalDropHandler {
                                     application: "",
                                     bookmark: bookmark
                                 )
-                                contextManager.contexts[contextIndex].items.append(.document(document))
-                                contextManager.saveContexts()
+                                contextManager.addItem(.document(document), to: contextManager.contexts[contextIndex].id)
                                 print("Added document: \(document.name)")
                             } else {
                                 // Fallback: add as document for any other file type
@@ -118,8 +115,7 @@ struct UniversalDropHandler {
                                     application: "",
                                     bookmark: bookmark
                                 )
-                                contextManager.contexts[contextIndex].items.append(.document(document))
-                                contextManager.saveContexts()
+                                contextManager.addItem(.document(document), to: contextManager.contexts[contextIndex].id)
                                 print("Added document: \(document.name)")
                             }
                         }
@@ -146,8 +142,7 @@ struct UniversalDropHandler {
                                 command: url.path,
                                 title: url.deletingPathExtension().lastPathComponent
                             )
-                            contextManager.contexts[contextIndex].items.append(.terminalSession(session))
-                            contextManager.saveContexts()
+                            contextManager.addItem(.terminalSession(session), to: contextManager.contexts[contextIndex].id)
                             print("Added terminal session for script: \(session.title)")
                         }
                     }
@@ -157,14 +152,12 @@ struct UniversalDropHandler {
                     if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
                         let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
                         DispatchQueue.main.async {
-                            contextManager.contexts[contextIndex].items.append(.browserTab(browserTab))
-                            contextManager.saveContexts()
+                            contextManager.addItem(.browserTab(browserTab), to: contextManager.contexts[contextIndex].id)
                         }
                     } else if let url = item as? URL {
                         let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
                         DispatchQueue.main.async {
-                            contextManager.contexts[contextIndex].items.append(.browserTab(browserTab))
-                            contextManager.saveContexts()
+                            contextManager.addItem(.browserTab(browserTab), to: contextManager.contexts[contextIndex].id)
                         }
                     }
                 }
@@ -175,8 +168,7 @@ struct UniversalDropHandler {
                         if let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)) {
                             let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
                             DispatchQueue.main.async {
-                                contextManager.contexts[contextIndex].items.append(.browserTab(browserTab))
-                                contextManager.saveContexts()
+                                contextManager.addItem(.browserTab(browserTab), to: contextManager.contexts[contextIndex].id)
                                 print("Added browser tab: \(browserTab.title)")
                             }
                         }

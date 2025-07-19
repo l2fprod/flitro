@@ -116,8 +116,7 @@ struct ContextDetailsView: View {
                                     makeRow(for: context.items[idx], contextIdx: contextIdx, itemIndex: idx)
                                 }
                                 .onMove { indices, newOffset in
-                                    contextManager.contexts[contextIdx].items.move(fromOffsets: indices, toOffset: newOffset)
-                                    contextManager.saveContexts()
+                                    contextManager.moveItems(fromOffsets: indices, toOffset: newOffset, in: contextManager.contexts[contextIdx].id)
                                 }
                             }
                             .listStyle(.inset)
@@ -139,8 +138,7 @@ struct ContextDetailsView: View {
                 .sheet(isPresented: $showAddAppDialog) {
                     AddAppDialog(
                         onAdd: { newApp in
-                            contextManager.contexts[contextIdx].items.append(.application(newApp))
-                            contextManager.saveContexts()
+                            contextManager.addItem(.application(newApp), to: contextManager.contexts[contextIdx].id)
                             showAddAppDialog = false
                         },
                         onCancel: { showAddAppDialog = false }
@@ -149,8 +147,7 @@ struct ContextDetailsView: View {
                 .sheet(isPresented: $showAddDocumentDialog) {
                     AddDocumentDialog(
                         onAdd: { newDoc in
-                            contextManager.contexts[contextIdx].items.append(.document(newDoc))
-                            contextManager.saveContexts()
+                            contextManager.addItem(.document(newDoc), to: contextManager.contexts[contextIdx].id)
                             showAddDocumentDialog = false
                         },
                         onCancel: { showAddDocumentDialog = false }
@@ -159,8 +156,7 @@ struct ContextDetailsView: View {
                 .sheet(isPresented: $showAddBrowserTabDialog) {
                     AddBrowserTabDialog(
                         onAdd: { newTab in
-                            contextManager.contexts[contextIdx].items.append(.browserTab(newTab))
-                            contextManager.saveContexts()
+                            contextManager.addItem(.browserTab(newTab), to: contextManager.contexts[contextIdx].id)
                             showAddBrowserTabDialog = false
                         },
                         onCancel: { showAddBrowserTabDialog = false }
@@ -169,8 +165,7 @@ struct ContextDetailsView: View {
                 .sheet(isPresented: $showAddTerminalDialog) {
                     AddTerminalDialog(
                         onAdd: { newTerm in
-                            contextManager.contexts[contextIdx].items.append(.terminalSession(newTerm))
-                            contextManager.saveContexts()
+                            contextManager.addItem(.terminalSession(newTerm), to: contextManager.contexts[contextIdx].id)
                             showAddTerminalDialog = false
                         },
                         onCancel: { showAddTerminalDialog = false }
@@ -304,8 +299,7 @@ struct ContextDetailsView: View {
             item: item,
             onOpen: onOpenAction(for: item, contextIdx: contextIdx),
             onDelete: {
-                contextManager.contexts[contextIdx].items.remove(at: itemIndex)
-                contextManager.saveContexts()
+                contextManager.removeItem(at: itemIndex, from: contextManager.contexts[contextIdx].id)
             }
         )
         .listRowInsets(EdgeInsets())

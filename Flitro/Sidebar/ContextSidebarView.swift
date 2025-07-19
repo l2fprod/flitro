@@ -15,7 +15,7 @@ struct ContextSidebarView: View {
                 Spacer()
                 Button(action: {
                     let newContext = Context(name: "New Context", items: [], iconName: nil)
-                    contextManager.contexts.append(newContext)
+                    contextManager.addContext(newContext)
                     selectedContextID = newContext.id
                 }) {
                     Image(systemName: "plus.circle.fill")
