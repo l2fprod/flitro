@@ -3,6 +3,82 @@ import Foundation
 import UniformTypeIdentifiers
 import AppKit
 
+struct ContextItemRow: View {
+    let item: ContextItem
+    let onOpen: (() -> Void)?
+    let onDelete: (() -> Void)?
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .resizable()
+                .frame(width: 22, height: 22)
+                .foregroundColor(iconColor)
+                .padding(6)
+                .background(Circle().fill(iconColor.opacity(0.12)))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 15, weight: .medium))
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+            }
+            Spacer()
+            if let onOpen = onOpen {
+                Button(action: onOpen) {
+                    Image(systemName: "arrow.up.forward.app")
+                }
+                .buttonStyle(.plain)
+                .help("Open")
+            }
+            if let onDelete = onDelete {
+                Button(action: onDelete) {
+                    Image(systemName: "trash").foregroundColor(.red)
+                }
+                .buttonStyle(.plain)
+                .help("Delete")
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        // .background(RoundedRectangle(cornerRadius: 8).fill(Color(.controlBackgroundColor)))
+        .contentShape(Rectangle())
+    }
+    private var icon: String {
+        switch item {
+        case .application: return "folder"
+        case .document: return "doc"
+        case .browserTab: return "globe"
+        case .terminalSession: return "terminal"
+        }
+    }
+    private var iconColor: Color {
+        switch item {
+        case .application: return .blue
+        case .document: return .orange
+        case .browserTab: return .purple
+        case .terminalSession: return .green
+        }
+    }
+    private var title: String {
+        switch item {
+        case .application(let app): return app.name
+        case .document(let doc): return doc.name
+        case .browserTab(let tab): return tab.title
+        case .terminalSession(let term): return term.title
+        }
+    }
+    private var subtitle: String? {
+        switch item {
+        case .application(let app): return app.bundleIdentifier
+        case .document(let doc): return doc.filePath
+        case .browserTab(let tab): return tab.url
+        case .terminalSession(let term): return term.command ?? term.workingDirectory
+        }
+    }
+}
+
 struct ContextDetailsView: View {
     @ObservedObject var contextManager: ContextManager
     @Binding var selectedContextID: UUID?
@@ -13,121 +89,53 @@ struct ContextDetailsView: View {
     
     @State private var isEditingTitle = false
     @State private var draftTitle = ""
+    @State private var showAddMenu = false
     
     var body: some View {
         ZStack {
             if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
                 let context = contextManager.contexts[contextIdx]
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 28) {
-                        // Applications Card
-                        CardSection(
-                            title: "Applications",
-                            items: context.items.compactMap { item -> AppItem? in
-                                if case .application(let app) = item { return app } else { return nil }
-                            }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.enumerated().map { (idx, app) in
-                                CardRow(
-                                    icon: "folder",
-                                    title: app.name,
-                                    subtitle: app.bundleIdentifier,
-                                    onOpen: { contextManager.openApp(app) },
-                                    onDelete: {
-                                        contextManager.contexts[contextIdx].items.removeAll { if case .application(let a) = $0 { return a.id == app.id } else { return false } }
-                                    }
-                                )
-                            },
-                            onAdd: {
-                                showAddAppDialog = true
+                VStack(spacing: 0) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Color(.controlBackgroundColor))
+                            .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 2)
+                        if context.items.isEmpty {
+                            VStack {
+                                Spacer()
+                                Text("Use the + button above or drag and drop apps, documents, or files here to add them to this context.")
+                                    .font(.title3)
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 24)
+                                Spacer()
                             }
-                        )
-                        // Documents Card
-                        CardSection(
-                            title: "Documents",
-                            items: context.items.compactMap { item -> DocumentItem? in
-                                if case .document(let doc) = item { return doc } else { return nil }
-                            }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }.enumerated().map { (idx, doc) in
-                                CardRow(
-                                    icon: "doc",
-                                    title: doc.name,
-                                    subtitle: doc.filePath,
-                                    onOpen: { contextManager.openDocument(doc) },
-                                    onDelete: {
-                                        contextManager.contexts[contextIdx].items.removeAll { if case .document(let d) = $0 { return d.id == doc.id } else { return false } }
-                                    }
-                                )
-                            },
-                            onAdd: {
-                                showAddDocumentDialog = true
-                            }
-                        )
-                        .sheet(isPresented: $showAddDocumentDialog) {
-                            AddDocumentDialog(
-                                onAdd: { newDoc in
-                                    contextManager.contexts[contextIdx].items.append(.document(newDoc))
-                                    showAddDocumentDialog = false
-                                },
-                                onCancel: { showAddDocumentDialog = false }
-                            )
-                        }
-                        // Browser Tabs Card
-                        CardSection(
-                            title: "Browser Tabs", 
-                            items: context.items.compactMap { item -> BrowserTab? in
-                                if case .browserTab(let tab) = item { return tab } else { return nil }
-                            }.enumerated().map { (idx, tab) in
-                                CardRow(
-                                    icon: "globe",
-                                    title: tab.title,
-                                    subtitle: tab.url,
-                                    onOpen: { contextManager.openBrowserTab(tab) },
-                                    onDelete: {
-                                        contextManager.contexts[contextIdx].items.removeAll { if case .browserTab(let t) = $0 { return t.id == tab.id } else { return false } }
-                                        contextManager.saveContexts()
-                                    }
-                                )
-                            },
-                            onAdd: {
-                                showAddBrowserTabDialog = true
-                            }
-                        )
-                        .sheet(isPresented: $showAddBrowserTabDialog) {
-                            AddBrowserTabDialog(
-                                onAdd: { newTab in
-                                    contextManager.contexts[contextIdx].items.append(.browserTab(newTab))
+                        } else {
+                            List {
+                                ForEach(context.items.indices, id: \.self) { idx in
+                                    makeRow(for: context.items[idx], contextIdx: contextIdx, itemIndex: idx)
+                                }
+                                .onMove { indices, newOffset in
+                                    contextManager.contexts[contextIdx].items.move(fromOffsets: indices, toOffset: newOffset)
                                     contextManager.saveContexts()
-                                    showAddBrowserTabDialog = false
-                                },
-                                onCancel: { showAddBrowserTabDialog = false }
+                                }
+                            }
+                            .listStyle(.inset)
+                            .background(Color.clear)
+                            .clipShape(TopRoundedRectangle(radius: 16))
+                            .overlay(
+                                TopRoundedRectangle(radius: 16)
+                                    .stroke(Color.gray.opacity(0.13), lineWidth: 1)
                             )
-                        }
-                        // Terminals Card
-                        CardSection(title: "Shell Scripts", items: context.items.compactMap { item -> TerminalSession? in
-                            if case .terminalSession(let term) = item { return term } else { return nil }
-                        }.enumerated().map { (idx, term) in
-                            CardRow(icon: "terminal", title: term.title, subtitle: term.command ?? term.workingDirectory, onDelete: {
-                                contextManager.contexts[contextIdx].items.removeAll { if case .terminalSession(let t) = $0 { return t.id == term.id } else { return false } }
-                                contextManager.saveContexts()
-                            })
-                        }, onAdd: {
-                            showAddTerminalDialog = true
-                        })
-                        .sheet(isPresented: $showAddTerminalDialog) {
-                            AddTerminalDialog(
-                                onAdd: { newTerm in
-                                    contextManager.contexts[contextIdx].items.append(.terminalSession(newTerm))
-                                    contextManager.saveContexts()
-                                    showAddTerminalDialog = false
-                                },
-                                onCancel: { showAddTerminalDialog = false }
-                            )
+                            .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 2)
+                            .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
+                                UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: selectedContextID)
+                            }
                         }
                     }
-                    .padding(.horizontal, 32)
-                    .padding(.top, 16)
-                    .padding(.bottom, 32)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 24)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .sheet(isPresented: $showAddAppDialog) {
                     AddAppDialog(
                         onAdd: { newApp in
@@ -136,6 +144,36 @@ struct ContextDetailsView: View {
                             showAddAppDialog = false
                         },
                         onCancel: { showAddAppDialog = false }
+                    )
+                }
+                .sheet(isPresented: $showAddDocumentDialog) {
+                    AddDocumentDialog(
+                        onAdd: { newDoc in
+                            contextManager.contexts[contextIdx].items.append(.document(newDoc))
+                            contextManager.saveContexts()
+                            showAddDocumentDialog = false
+                        },
+                        onCancel: { showAddDocumentDialog = false }
+                    )
+                }
+                .sheet(isPresented: $showAddBrowserTabDialog) {
+                    AddBrowserTabDialog(
+                        onAdd: { newTab in
+                            contextManager.contexts[contextIdx].items.append(.browserTab(newTab))
+                            contextManager.saveContexts()
+                            showAddBrowserTabDialog = false
+                        },
+                        onCancel: { showAddBrowserTabDialog = false }
+                    )
+                }
+                .sheet(isPresented: $showAddTerminalDialog) {
+                    AddTerminalDialog(
+                        onAdd: { newTerm in
+                            contextManager.contexts[contextIdx].items.append(.terminalSession(newTerm))
+                            contextManager.saveContexts()
+                            showAddTerminalDialog = false
+                        },
+                        onCancel: { showAddTerminalDialog = false }
                     )
                 }
             } else {
@@ -176,39 +214,74 @@ struct ContextDetailsView: View {
                     }
                 }
             }
-            if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
-                let context = contextManager.contexts[contextIdx]
-                ToolbarItemGroup(placement: .automatic) {
-                    ForEach(SwitchingMode.allCases, id: \ .self) { mode in
-                        Button(action: {
-                            contextManager.switchToContext(context, switchingMode: mode)
-                        }) {
-                            HStack(spacing: 4) {
-                                Image(systemName: iconForSwitchingMode(mode))
-                                    .font(.caption)
-                                Text(mode.rawValue)
-                                    .font(.caption)
+            ToolbarItemGroup(placement: .automatic) {
+                // Add dropdown menu for adding items (unchanged)
+                Menu {
+                    Button("Application", action: { showAddAppDialog = true })
+                    Button("Document", action: { showAddDocumentDialog = true })
+                    Button("Browser Tab", action: { showAddBrowserTabDialog = true })
+                    Button("Shell Script", action: { showAddTerminalDialog = true })
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus")
+                        Text("Add")
+                    }
+                    .font(.system(size: 16, weight: .medium))
+                    .help("Add Item")
+                }
+                // Single switching mode button + menu
+                if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
+                    let context = contextManager.contexts[contextIdx]
+                    Menu {
+                        ForEach(SwitchingMode.allCases, id: \ .self) { mode in
+                            Button(action: {
+                                contextManager.switchToContext(context, switchingMode: mode)
+                            }) {
+                                HStack(spacing: 4) {
+                                    Image(systemName: iconForSwitchingMode(mode))
+                                        .font(.caption)
+                                    Text(mode.rawValue)
+                                        .font(.caption)
+                                }
                             }
+                            .help(mode.description)
+                        }
+                    } label: {
+                        Button(action: {
+                            contextManager.switchToContext(context, switchingMode: .additive)
+                        }) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.right.square") // Explicit open icon
+                                Text("Open")
+                            }
+                            .font(.system(size: 16, weight: .medium))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
                             .background(
-                                Capsule().fill(colorForSwitchingMode(mode))
+                                Capsule().fill(colorForSwitchingMode(.additive))
                             )
                             .foregroundColor(.white)
                         }
-                        .help(mode.description)
                         .buttonStyle(.plain)
+                        .help("Switch context (default: Additive)")
                     }
-                    Button("Close") {
+                    Button(action: {
                         contextManager.closeContext(context)
+                    }) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "xmark")
+                            Text("Close")
+                        }
+                        .font(.system(size: 12, weight: .medium))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule().fill(Color.red.opacity(0.7)) // Lighter red
+                        )
+                        .foregroundColor(.white)
                     }
                     .buttonStyle(.plain)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(
-                        Capsule().fill(Color.red)
-                    )
-                    .foregroundColor(.white)
+                    .help("Close context")
                 }
             }
         }
@@ -216,6 +289,32 @@ struct ContextDetailsView: View {
         .onChange(of: selectedContextID) { _, _ in
             isEditingTitle = false
         }
+    }
+    
+    private func onOpenAction(for item: ContextItem, contextIdx: Int) -> (() -> Void)? {
+        switch item {
+        case .application(let app):
+            return { contextManager.openApp(app) }
+        case .document(let doc):
+            return { contextManager.openDocument(doc) }
+        case .browserTab(let tab):
+            return { contextManager.openBrowserTab(tab) }
+        case .terminalSession:
+            return nil
+        }
+    }
+    
+    private func makeRow(for item: ContextItem, contextIdx: Int, itemIndex: Int) -> some View {
+        ContextItemRow(
+            item: item,
+            onOpen: onOpenAction(for: item, contextIdx: contextIdx),
+            onDelete: {
+                contextManager.contexts[contextIdx].items.remove(at: itemIndex)
+                contextManager.saveContexts()
+            }
+        )
+        .listRowInsets(EdgeInsets())
+        .background(Color.clear)
     }
     
     // Helper for icon
@@ -246,5 +345,32 @@ struct ContextDetailsView: View {
         case .hybrid:
             return Color.purple
         }
+    }
+}
+
+struct TopRoundedRectangle: Shape {
+    var radius: CGFloat = 16.0
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let width = rect.size.width
+        let height = rect.size.height
+        let tr = min(min(radius, height/2), width/2)
+        let tl = tr
+
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + tl))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.minX + tl, y: rect.minY),
+            control: CGPoint(x: rect.minX, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX - tr, y: rect.minY))
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + tr),
+            control: CGPoint(x: rect.maxX, y: rect.minY)
+        )
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }

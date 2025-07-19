@@ -34,29 +34,27 @@ struct ContextEditorView: View {
                 showAddTerminalDialog: $showAddTerminalDialog
             )
             .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
-                return handleUniversalDrop(providers: providers)
+                return UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: selectedContextID)
             }
         }
         .frame(minWidth: 900, minHeight: 600)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
 
-    private func handleUniversalDrop(providers: [NSItemProvider]) -> Bool {
-        guard let contextIndex = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) else { 
+struct UniversalDropHandler {
+    static func handleUniversalDrop(providers: [NSItemProvider], contextManager: ContextManager, selectedContextID: UUID?) -> Bool {
+        guard let contextIndex = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) else {
             print("No selected context found for drop")
-            return false 
+            return false
         }
-        
         guard !providers.isEmpty else {
             print("No providers in drop")
             return false
         }
-        
         var handled = false
-        
         for provider in providers {
             print("Processing provider with types: \(provider.registeredTypeIdentifiers)")
-            
             if provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) || provider.hasItemConformingToTypeIdentifier("public.file-url") {
                 let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) ? UTType.fileURL.identifier : "public.file-url"
                 provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
@@ -65,7 +63,6 @@ struct ContextEditorView: View {
                         return
                     }
                     print("Loaded item: \(String(describing: item))")
-                    
                     var url: URL?
                     if let urlObject = item as? URL {
                         url = urlObject
@@ -73,12 +70,10 @@ struct ContextEditorView: View {
                         url = URL(dataRepresentation: data, relativeTo: nil)
                         print("Converted data to URL: \(String(describing: url))")
                     }
-                    
                     if let url = url {
                         print("Processing URL: \(url)")
                         DispatchQueue.main.async {
                             if url.pathExtension == "app" {
-                                // Add as application
                                 if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
                                     let appItem = AppItem(name: url.deletingPathExtension().lastPathComponent, bundleIdentifier: bundleId, windowTitle: nil)
                                     contextManager.contexts[contextIndex].items.append(.application(appItem))
@@ -86,7 +81,6 @@ struct ContextEditorView: View {
                                     print("Added application: \(appItem.name)")
                                 }
                             } else if url.pathExtension == "sh" {
-                                // Add as terminal session (shell script)
                                 let session = TerminalSession(
                                     workingDirectory: url.deletingLastPathComponent().path,
                                     command: url.path,
@@ -95,8 +89,23 @@ struct ContextEditorView: View {
                                 contextManager.contexts[contextIndex].items.append(.terminalSession(session))
                                 contextManager.saveContexts()
                                 print("Added terminal session for script: \(session.title)")
+                                var bookmark: Data? = nil
+                                do {
+                                    bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                                } catch {
+                                    bookmark = nil
+                                }
+                                let document = DocumentItem(
+                                    name: url.deletingPathExtension().lastPathComponent,
+                                    filePath: url.path,
+                                    application: "",
+                                    bookmark: bookmark
+                                )
+                                contextManager.contexts[contextIndex].items.append(.document(document))
+                                contextManager.saveContexts()
+                                print("Added document: \(document.name)")
                             } else {
-                                // Add as document
+                                // Fallback: add as document for any other file type
                                 var bookmark: Data? = nil
                                 do {
                                     bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
@@ -144,7 +153,6 @@ struct ContextEditorView: View {
                     }
                 }
                 handled = true
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) {
                 provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, _ in
                     if let data = item as? Data, let url = URL(dataRepresentation: data, relativeTo: nil) {
                         let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
@@ -161,11 +169,9 @@ struct ContextEditorView: View {
                     }
                 }
                 handled = true
-            } else if provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) || provider.hasItemConformingToTypeIdentifier(UTType.plainText.identifier) {
                 let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.text.identifier) ? UTType.text.identifier : UTType.plainText.identifier
                 provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, _ in
                     if let text = item as? String, !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        // Try to parse as URL first
                         if let url = URL(string: text.trimmingCharacters(in: .whitespacesAndNewlines)) {
                             let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
                             DispatchQueue.main.async {
@@ -179,7 +185,6 @@ struct ContextEditorView: View {
                 handled = true
             }
         }
-        
         print("Drop handling complete. Handled: \(handled)")
         return handled
     }

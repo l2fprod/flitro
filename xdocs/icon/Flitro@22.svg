@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<svg width="450" height="450" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+ <!-- Created with SVG-edit - https://github.com/SVG-Edit/svgedit-->
+ <g class="layer">
+  <title>Layer 1</title>
+  <!-- <rect fill="#ffffff" fill-opacity="0.0" height="200" id="svg_4" stroke="#ffffff" stroke-width="15" width="200" x="89.5" y="84.5" shape-rendering="crispEdges"/> -->
+  <!-- <rect fill="#ffffff" fill-opacity="0.0" height="200" id="svg_1" rx="13" ry="13" stroke="#ffffff" stroke-width="15" width="200" x="129.5" y="122" style="shape-rendering: crispEdges;"/> -->
+  <rect fill="#ffffff" fill-opacity="0.0" height="200" id="svg_3" rx="13" ry="13" stroke="#ffffff" stroke-width="15" width="200" x="100" y="100" style="shape-rendering: crispEdges;"/>
+  <ellipse cx="468.96" cy="840.84" fill="#ffffff" fill-opacity="0.0" id="svg_2" rx="185" ry="80" stroke="#ffffff" stroke-width="10" transform="translate(35.2001 97.9543) scale(1 1.03089) translate(-35.2001 -97.9543) matrix(1.00651 -0.473353 0.451194 1.05594 -626.89 -423.854)" shape-rendering="geometricPrecision"/>
+ </g>
+</svg>
