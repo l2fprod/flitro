@@ -64,6 +64,9 @@ struct FlitroApp: App {
         MenuBarExtra("Flitro", systemImage: "rectangle.3.offgrid") {
             MenuBarExtraContents().environmentObject(ContextManager.shared)
         }
+        Settings {
+            SettingsView()
+        }
     }
 }
 
