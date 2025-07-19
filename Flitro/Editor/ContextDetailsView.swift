@@ -5,16 +5,24 @@ import AppKit
 
 struct ContextItemRow: View {
     let item: ContextItem
+    let contextManager: ContextManager
     let onOpen: (() -> Void)?
     let onDelete: (() -> Void)?
+    
     var body: some View {
         HStack(spacing: 16) {
-            Image(systemName: icon)
-                .resizable()
-                .frame(width: 22, height: 22)
-                .foregroundColor(iconColor)
-                .padding(6)
-                .background(Circle().fill(iconColor.opacity(0.12)))
+            if let iconImage = iconImage {
+                Image(nsImage: iconImage)
+                    .resizable()
+                    .frame(width: 34, height: 34)
+            } else {
+                Image(systemName: icon)
+                    .resizable()
+                    .frame(width: 22, height: 22)
+                    .foregroundColor(iconColor)
+                    .padding(6)
+                    .background(Circle().fill(iconColor.opacity(0.12)))
+            }
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 15, weight: .medium))
@@ -42,9 +50,9 @@ struct ContextItemRow: View {
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 8)
-        // .background(RoundedRectangle(cornerRadius: 8).fill(Color(.controlBackgroundColor)))
         .contentShape(Rectangle())
     }
+    
     private var icon: String {
         switch item {
         case .application: return "folder"
@@ -76,6 +84,11 @@ struct ContextItemRow: View {
         case .browserTab(let tab): return tab.url
         case .terminalSession(let term): return term.command ?? term.workingDirectory
         }
+    }
+    
+    // Helper to get the correct NSImage for the item
+    private var iconImage: NSImage? {
+        return contextManager.icon(for: item)
     }
 }
 
@@ -297,6 +310,7 @@ struct ContextDetailsView: View {
     private func makeRow(for item: ContextItem, contextIdx: Int, itemIndex: Int) -> some View {
         ContextItemRow(
             item: item,
+            contextManager: contextManager,
             onOpen: onOpenAction(for: item, contextIdx: contextIdx),
             onDelete: {
                 contextManager.removeItem(at: itemIndex, from: contextManager.contexts[contextIdx].id)

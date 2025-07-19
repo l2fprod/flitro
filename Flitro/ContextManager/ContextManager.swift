@@ -408,6 +408,16 @@ class ContextManager: ObservableObject {
             print("No existing contexts.json found or failed to read: \(error)")
         }
     }
+
+    /// Returns the best icon for a given ContextItem (app, document, browser tab, etc.)
+    public func icon(for item: ContextItem) -> NSImage? {
+        let ws = NSWorkspace.shared
+        if let bundleId = bundleId(for: item),
+           let url = ws.urlForApplication(withBundleIdentifier: bundleId) {
+            return ws.icon(forFile: url.path)
+        }
+        return nil
+    }
 }
 
 extension ContextManager {
