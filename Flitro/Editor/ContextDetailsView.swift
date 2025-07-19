@@ -229,6 +229,10 @@ struct ContextDetailsView: View {
                     .font(.system(size: 16, weight: .medium))
                     .help("Add Item")
                 }
+                Rectangle()
+                    .frame(width: 1, height: 24)
+                    .foregroundColor(Color.gray.opacity(0.3))
+                    .padding(.horizontal, 4)
                 // Single switching mode button + menu
                 if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
                     let context = contextManager.contexts[contextIdx]
