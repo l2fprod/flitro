@@ -12,13 +12,13 @@ struct ContextCardView: View {
     @State private var isHovered = false
     @State private var showIconSelector = false
     
-    var iconColor: Color {
+    private var iconColor: Color {
         let colors: [Color] = [.blue, .green, .purple, .orange, .pink, .teal]
         let idx = abs(context.name.hashValue) % colors.count
         return colors[idx]
     }
     
-    var foregroundColor: Color {
+    private var foregroundColor: Color {
         if let foregroundHex = context.iconForegroundColor, let color = Color(hex: foregroundHex) {
             return color
         } else {
@@ -26,40 +26,9 @@ struct ContextCardView: View {
         }
     }
     
-    var itemCountText: String {
+    private var itemCountText: String {
         let total = context.items.count
         return "\(total) items"
-    }
-    
-    var backgroundColor: Color {
-        if isSelected {
-            if let backgroundColorHex = context.iconBackgroundColor, let backgroundColor = Color(hex: backgroundColorHex) {
-                return backgroundColor.darker(by: 0.25)
-            } else {
-                return Color.accentColor.opacity(0.32)
-            }
-        } else if isHovered {
-            return Color.accentColor.opacity(0.12)
-        } else {
-            return Color.clear
-        }
-    }
-
-    // Adaptive label color for best contrast
-    var adaptiveLabelColor: Color {
-        let bg: Color = backgroundColor
-        // Try icon foreground color if set and not too close to background
-        if let foregroundHex = context.iconForegroundColor, let fg = Color(hex: foregroundHex), fg.contrastRatio(with: bg) > 2.5, fg != bg {
-            return fg
-        }
-        // Otherwise, pick black or white for best contrast
-        let blackContrast = Color.black.contrastRatio(with: bg)
-        let whiteContrast = Color.white.contrastRatio(with: bg)
-        return blackContrast > whiteContrast ? .black : .white
-    }
-    
-    var borderColor: Color {
-        isSelected ? Color.accentColor : Color(NSColor.separatorColor)
     }
     
     var body: some View {
