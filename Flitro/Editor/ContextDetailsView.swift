@@ -269,9 +269,6 @@ struct ContextDetailsView: View {
                             .font(.system(size: 16, weight: .medium))
                             .padding(.horizontal, 10)
                             .padding(.vertical, 6)
-                            .background(
-                                Capsule().fill(colorForSwitchingMode(.additive))
-                            )
                             .foregroundColor(.white)
                         }
                         .buttonStyle(.plain)
@@ -327,8 +324,6 @@ struct ContextDetailsView: View {
             return "arrow.triangle.2.circlepath"
         case .additive:
             return "plus.circle"
-        case .hybrid:
-            return "brain.head.profile"
         }
     }
     
@@ -337,17 +332,6 @@ struct ContextDetailsView: View {
             return context.name
         }
         return "Context"
-    }
-    
-    private func colorForSwitchingMode(_ mode: SwitchingMode) -> Color {
-        switch mode {
-        case .replaceAll:
-            return Color.blue
-        case .additive:
-            return Color.green
-        case .hybrid:
-            return Color.purple
-        }
     }
 }
 

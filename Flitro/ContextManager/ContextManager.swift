@@ -172,7 +172,6 @@ struct TerminalSession: Identifiable, Codable, Equatable, Hashable {
 enum SwitchingMode: String, CaseIterable {
     case replaceAll = "Replace All"
     case additive = "Additive"
-    case hybrid = "Smart Replace"
     
     var description: String {
         switch self {
@@ -180,8 +179,6 @@ enum SwitchingMode: String, CaseIterable {
             return "Close current context apps and open new ones"
         case .additive:
             return "Keep current apps and add new context apps"
-        case .hybrid:
-            return "Close non-essential apps, keep productivity apps"
         }
     }
 }
@@ -247,18 +244,14 @@ class ContextManager: ObservableObject {
     // MARK: - Context Switching
     
     func switchToContext(_ context: Context, switchingMode: SwitchingMode) {
-        switch switchingMode {
-        case .replaceAll:
+        if switchingMode == .replaceAll {
             if let currentContext = activeContext {
                 closeContext(currentContext)
             }
             activeContext = context
-            openContextItems(context)
-            saveContexts()
-        case .additive, .hybrid:
-            openContextItems(context)
-            saveContexts()
         }
+        openContextItems(context)
+        saveContexts()
     }
 
     /// Determine the bundle identifier for a ContextItem

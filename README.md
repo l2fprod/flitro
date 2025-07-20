@@ -7,7 +7,7 @@ Flitro is a powerful macOS productivity app designed to help you seamlessly swit
 ## Key Features
 
 - **Instant Context Switching:** Instantly switch your workspace to a saved context, opening and closing the right apps, documents, browser tabs, and terminals for your task.
-- **Flexible Switching Modes:** Choose between Replace All, Additive, or Hybrid modes to tailor how your workspace changes.
+- **Flexible Switching Modes:** Choose between Replace All, or Additive modes to tailor how your workspace changes.
 - **Easy Context Management:** Create, edit, and delete named contexts to match your workflows.
 - **Menu Bar Access:** Quickly access and switch contexts from the macOS menu bar, without interrupting your flow.
 - **Unified Window Experience:** The main window is always available from the menu bar or via keyboard shortcut, never duplicated, and hides when closed for a clutter-free desktop.
