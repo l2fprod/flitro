@@ -156,6 +156,9 @@ struct ContextDetailsView: View {
                         },
                         onCancel: { showAddAppDialog = false }
                     )
+                    .presentationDetents([.height(480)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(16)
                 }
                 .sheet(isPresented: $showAddDocumentDialog) {
                     AddDocumentDialog(
@@ -165,6 +168,9 @@ struct ContextDetailsView: View {
                         },
                         onCancel: { showAddDocumentDialog = false }
                     )
+                    .presentationDetents([.height(480)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(16)
                 }
                 .sheet(isPresented: $showAddBrowserTabDialog) {
                     AddBrowserTabDialog(
@@ -174,6 +180,9 @@ struct ContextDetailsView: View {
                         },
                         onCancel: { showAddBrowserTabDialog = false }
                     )
+                    .presentationDetents([.height(480)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(16)
                 }
                 .sheet(isPresented: $showAddTerminalDialog) {
                     AddTerminalDialog(
@@ -183,6 +192,9 @@ struct ContextDetailsView: View {
                         },
                         onCancel: { showAddTerminalDialog = false }
                     )
+                    .presentationDetents([.height(480)])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(16)
                 }
             } else {
                 VStack {

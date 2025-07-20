@@ -277,6 +277,8 @@ struct CardRow: View {
 
 struct GenericDialog<Content: View>: View {
     let title: String
+    let icon: String
+    let subtitle: String
     let content: Content
     let onCancel: () -> Void
     let onConfirm: (Content) -> Void
@@ -285,6 +287,8 @@ struct GenericDialog<Content: View>: View {
     
     init(
         title: String,
+        icon: String,
+        subtitle: String,
         confirmTitle: String = "Add",
         isConfirmDisabled: Bool = false,
         onCancel: @escaping () -> Void,
@@ -292,6 +296,8 @@ struct GenericDialog<Content: View>: View {
         @ViewBuilder content: () -> Content
     ) {
         self.title = title
+        self.icon = icon
+        self.subtitle = subtitle
         self.confirmTitle = confirmTitle
         self.isConfirmDisabled = isConfirmDisabled
         self.onCancel = onCancel
@@ -301,26 +307,77 @@ struct GenericDialog<Content: View>: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text(title)
-                .font(.title2).fontWeight(.bold)
-                .padding(.bottom, 12)
+            // Header with icon and title
+            HStack(spacing: 12) {
+                // Icon provided by the dialog
+                Image(systemName: icon)
+                    .font(.title2)
+                    .foregroundColor(.accentColor)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        Circle()
+                            .fill(Color.accentColor.opacity(0.1))
+                    )
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text(subtitle)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                Spacer()
+            }
+            .padding(.bottom, 20)
             
+            // Content area
             content
+                .padding(.horizontal, 4)
             
             Spacer()
             
-            HStack {
+            // Footer with buttons
+            HStack(spacing: 12) {
+                Button("Cancel") { 
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        onCancel() 
+                    }
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+                .scaleEffect(1.0)
+                .animation(.easeInOut(duration: 0.1), value: true)
+                
                 Spacer()
-                Button("Cancel") { onCancel() }
-                Button(confirmTitle) { onConfirm(content) }
-                    .disabled(isConfirmDisabled)
+                
+                Button(confirmTitle) { 
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        onConfirm(content) 
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                .disabled(isConfirmDisabled)
+                .scaleEffect(isConfirmDisabled ? 0.95 : 1.0)
+                .animation(.easeInOut(duration: 0.1), value: isConfirmDisabled)
             }
-            .padding(.top, 16)
+            .padding(.top, 24)
         }
-        .padding(24)
-        .frame(width: 420, height: 340)
-        .background(Color(.windowBackgroundColor))
-        .cornerRadius(12)
+        .padding(28)
+        .frame(width: 480, height: 480)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.windowBackgroundColor))
+                .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 8)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+        )
     }
 }
 

@@ -24,6 +24,8 @@ struct AddTerminalDialog: View {
     var body: some View {
         GenericDialog(
             title: "Add Shell Script",
+            icon: "terminal",
+            subtitle: "Add a terminal session to your context",
             isConfirmDisabled: viewModel.isConfirmDisabled,
             onCancel: onCancel,
             onConfirm: { _ in
@@ -41,20 +43,112 @@ struct AddTerminalDialogContent: View {
     var onAdd: (TerminalSession) -> Void
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TextField("Title", text: $viewModel.termTitle)
-            HStack {
-                TextField("Working Directory", text: $viewModel.workingDirectory)
-                Button("Choose...") {
-                    viewModel.showDirectoryPicker = true
+        VStack(alignment: .leading, spacing: 28) {
+            // Title input section
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "textformat")
+                            .foregroundColor(.accentColor)
+                        Text("Session Title")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    Text("Give your terminal session a descriptive name")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                TextField("e.g., Development Server", text: $viewModel.termTitle)
+                    .textFieldStyle(.roundedBorder)
+            }
+            
+            // Working directory section
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "folder")
+                            .foregroundColor(.accentColor)
+                        Text("Working Directory")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    Text("The directory where the terminal session will start")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 12) {
+                    TextField("/path/to/directory", text: $viewModel.workingDirectory)
+                        .textFieldStyle(.roundedBorder)
+                    
+                    Button(action: { viewModel.showDirectoryPicker = true }) {
+                        HStack {
+                            Image(systemName: "folder.badge.plus")
+                            Text("Choose")
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.accentColor.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .scaleEffect(1.0)
+                    .animation(.easeInOut(duration: 0.1), value: true)
                 }
             }
-            HStack {
-                TextField("Shell Command or Script Path", text: $viewModel.command)
-                Button("Choose...") {
-                    viewModel.showScriptPicker = true
+            
+            // Command section
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Image(systemName: "terminal")
+                            .foregroundColor(.accentColor)
+                        Text("Command (Optional)")
+                            .font(.headline)
+                            .fontWeight(.semibold)
+                    }
+                    
+                    Text("Shell command or script to run. Leave empty to start an interactive shell.")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                
+                HStack(spacing: 12) {
+                    TextField("e.g., npm start", text: $viewModel.command)
+                        .textFieldStyle(.roundedBorder)
+                    
+                    Button(action: { viewModel.showScriptPicker = true }) {
+                        HStack {
+                            Image(systemName: "doc.badge.plus")
+                            Text("Choose")
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6)
+                                .fill(Color.accentColor.opacity(0.1))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                                )
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .scaleEffect(1.0)
+                    .animation(.easeInOut(duration: 0.1), value: true)
                 }
             }
+            
+            Spacer()
         }
         .fileImporter(isPresented: $viewModel.showScriptPicker, allowedContentTypes: [.data], allowsMultipleSelection: false) { result in
             if let url = try? result.get().first {
