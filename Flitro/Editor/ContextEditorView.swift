@@ -175,6 +175,31 @@ struct UniversalDropHandler {
                     }
                 }
                 handled = true
+            } else if provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) || provider.hasItemConformingToTypeIdentifier("public.url") {
+                let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) ? UTType.url.identifier : "public.url"
+                provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
+                    if let error = error {
+                        print("Error loading URL: \(error)")
+                        return
+                    }
+                    var url: URL?
+                    if let urlObject = item as? URL {
+                        url = urlObject
+                    } else if let data = item as? Data {
+                        url = URL(dataRepresentation: data, relativeTo: nil)
+                        print("Converted data to URL: \(String(describing: url))")
+                    } else if let str = item as? String, let urlFromString = URL(string: str) {
+                        url = urlFromString
+                    }
+                    if let url = url {
+                        let browserTab = BrowserTab(title: url.absoluteString, url: url.absoluteString, browser: "default")
+                        DispatchQueue.main.async {
+                            contextManager.addItem(.browserTab(browserTab), to: contextManager.contexts[contextIndex].id)
+                            print("Added browser tab: \(browserTab.title)")
+                        }
+                    }
+                }
+                handled = true
             }
         }
         print("Drop handling complete. Handled: \(handled)")
