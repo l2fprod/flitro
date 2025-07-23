@@ -11,6 +11,7 @@ struct ContextCardView: View {
     
     @State private var isHovered = false
     @State private var showIconSelector = false
+    @EnvironmentObject private var contextManager: ContextManager
     
     private var iconColor: Color {
         let colors: [Color] = [.blue, .green, .purple, .orange, .pink, .teal]
@@ -81,6 +82,14 @@ struct ContextCardView: View {
             isHovered = hovering
         }
         .contextMenu {
+            Button("Open") {
+                contextManager.switchToContext(context)
+            }
+            .disabled(contextManager.isActive(context: context))
+            Button("Close") {
+                contextManager.closeContext(context)
+            }
+            .disabled(!contextManager.isActive(context: context))
             Button("Change Icon...") {
                 showIconSelector = true
             }

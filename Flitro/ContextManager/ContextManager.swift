@@ -56,7 +56,6 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
     var iconName: String? = nil
     var iconBackgroundColor: String? = nil // Optional hex color string
     var iconForegroundColor: String? = nil // Optional hex color string
-    var isActive: Bool = false
     var createdAt: Date = Date()
     var lastUsed: Date = Date()
     
@@ -68,7 +67,6 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
         hasher.combine(iconName)
         hasher.combine(iconBackgroundColor)
         hasher.combine(iconForegroundColor)
-        hasher.combine(isActive)
         hasher.combine(items.count)
         // Add more properties as needed for UI reactivity
         return hasher.finalize()
@@ -99,7 +97,6 @@ extension Context {
         let iconName = legacy["iconName"] as? String
         let iconBackgroundColor = legacy["iconBackgroundColor"] as? String
         let iconForegroundColor = legacy["iconForegroundColor"] as? String
-        let isActive = legacy["isActive"] as? Bool ?? false
         let createdAt = (legacy["createdAt"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         let lastUsed = (legacy["lastUsed"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
         var items: [ContextItem] = []
@@ -135,7 +132,7 @@ extension Context {
                 }
             }
         }
-        return Context(id: id, name: name, items: items, iconName: iconName, iconBackgroundColor: iconBackgroundColor, iconForegroundColor: iconForegroundColor, isActive: isActive, createdAt: createdAt, lastUsed: lastUsed)
+        return Context(id: id, name: name, items: items, iconName: iconName, iconBackgroundColor: iconBackgroundColor, iconForegroundColor: iconForegroundColor, createdAt: createdAt, lastUsed: lastUsed)
     }
 }
 
@@ -169,28 +166,12 @@ struct TerminalSession: Identifiable, Codable, Equatable, Hashable {
     var title: String
 }
 
-enum SwitchingMode: String, CaseIterable {
-    case replaceAll = "Replace All"
-    case additive = "Additive"
-    
-    var description: String {
-        switch self {
-        case .replaceAll:
-            return "Close current context apps and open new ones"
-        case .additive:
-            return "Keep current apps and add new context apps"
-        }
-    }
-}
-
-// MARK: - Abstractions for Generic Item Handling
-
 // MARK: - Context Manager
 
 class ContextManager: ObservableObject {
     static let shared = ContextManager()
     @Published var contexts: [Context] = []
-    @Published var activeContext: Context?
+    @Published var activeContexts: [Context] = []
     
     // Store launchers per context
     private var contextLaunchers: [UUID: [ContextApplicationLauncher]] = [:]
@@ -233,8 +214,8 @@ class ContextManager: ObservableObject {
   
     func deleteContext(_ context: Context) {
         contexts.removeAll { $0.id == context.id }
-        if activeContext?.id == context.id {
-            activeContext = nil
+        if activeContexts.contains(where: { $0.id == context.id }) {
+            activeContexts.removeAll(where: { $0.id == context.id })
         }
         // Remove all launchers for the context
         contextLaunchers.removeValue(forKey: context.id)
@@ -243,14 +224,9 @@ class ContextManager: ObservableObject {
     
     // MARK: - Context Switching
     
-    func switchToContext(_ context: Context, switchingMode: SwitchingMode) {
-        if switchingMode == .replaceAll {
-            if let currentContext = activeContext {
-                closeContext(currentContext)
-            }
-            activeContext = context
-        }
-        openContextItems(context)
+    func switchToContext(_ context: Context) {
+        activeContexts.append(context)
+        openContext(context)
         saveContexts()
     }
 
@@ -303,7 +279,7 @@ class ContextManager: ObservableObject {
     }
 
     /// Open all items in the context, batching by app/bundle where possible, using launchers
-    private func openContextItems(_ context: Context) {
+    private func openContext(_ context: Context) {
         var itemsByBundle: [String: [ContextItem]] = [:]
         for item in context.items {
             if let bundleId = bundleId(for: item) {
@@ -362,7 +338,21 @@ class ContextManager: ObservableObject {
             }
             contextLaunchers.removeValue(forKey: context.id)
         }
-        // No need to call closeBrowserWindowsForContext or per-item close logic anymore
+        // Remove the context from activeContexts if present
+        activeContexts.removeAll { $0.id == context.id }
+    }
+
+    func closeAllContexts() {
+        // Close all active contexts
+        for context in activeContexts {
+            if let launchers = contextLaunchers[context.id] {
+                for launcher in launchers {
+                    launcher.close()
+                }
+                contextLaunchers.removeValue(forKey: context.id)
+            }
+        }
+        activeContexts.removeAll()
     }
     
     // MARK: - Persistence
@@ -410,6 +400,10 @@ class ContextManager: ObservableObject {
             return ws.icon(forFile: url.path)
         }
         return nil
+    }
+
+    func isActive(context: Context) -> Bool {
+        return activeContexts.contains(where: { $0.id == context.id })
     }
 }
 

@@ -2,6 +2,7 @@ import SwiftUI
 import Foundation
 import UniformTypeIdentifiers
 import AppKit
+import Combine
 
 struct ContextItemRow: View {
     let item: ContextItem
@@ -253,56 +254,10 @@ struct ContextDetailsView: View {
                     .frame(width: 1, height: 24)
                     .foregroundColor(Color.gray.opacity(0.3))
                     .padding(.horizontal, 4)
-                // Single switching mode button + menu
+                // Single context button
                 if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
                     let context = contextManager.contexts[contextIdx]
-                    Menu {
-                        ForEach(SwitchingMode.allCases, id: \ .self) { mode in
-                            Button(action: {
-                                contextManager.switchToContext(context, switchingMode: mode)
-                            }) {
-                                HStack(spacing: 4) {
-                                    Image(systemName: iconForSwitchingMode(mode))
-                                        .font(.caption)
-                                    Text(mode.rawValue)
-                                        .font(.caption)
-                                }
-                            }
-                            .help(mode.description)
-                        }
-                    } label: {
-                        Button(action: {
-                            contextManager.switchToContext(context, switchingMode: .additive)
-                        }) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "arrow.right.square") // Explicit open icon
-                                Text("Open")
-                            }
-                            .font(.system(size: 16, weight: .medium))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .foregroundColor(.white)
-                        }
-                        .buttonStyle(.plain)
-                        .help("Switch context (default: Additive)")
-                    }
-                    Button(action: {
-                        contextManager.closeContext(context)
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "xmark")
-                            Text("Close")
-                        }
-                        .font(.system(size: 12, weight: .medium))
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(
-                            Capsule().fill(Color.red.opacity(0.7)) // Lighter red
-                        )
-                        .foregroundColor(.white)
-                    }
-                    .buttonStyle(.plain)
-                    .help("Close context")
+                    ContextButton(context: context, contextManager: contextManager)
                 }
             }
         }
@@ -328,22 +283,105 @@ struct ContextDetailsView: View {
         .listRowInsets(EdgeInsets())
         .background(Color.clear)
     }
-    
-    // Helper for icon
-    private func iconForSwitchingMode(_ mode: SwitchingMode) -> String {
-        switch mode {
-        case .replaceAll:
-            return "arrow.triangle.2.circlepath"
-        case .additive:
-            return "plus.circle"
-        }
-    }
-    
+
     private var selectedContextName: String {
         if let id = selectedContextID, let context = contextManager.contexts.first(where: { $0.id == id }) {
             return context.name
         }
         return "Context"
+    }
+}
+
+struct ContextButton: View {
+    let context: Context
+    @ObservedObject var contextManager: ContextManager
+    @State private var isOptionPressed = false
+
+    var body: some View {
+        Button(action: buttonAction) {
+            HStack(spacing: 6) {
+                Image(systemName: buttonIcon)
+                Text(buttonText)
+            }
+            .font(.system(size: 14, weight: .medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(
+                Capsule().fill(buttonBackgroundColor)
+            )
+            .foregroundColor(.white)
+        }
+        .buttonStyle(.plain)
+        .help(buttonHelpText)
+        .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
+            // Check for Option key state periodically
+            isOptionPressed = NSEvent.modifierFlags.contains(.option)
+        }
+    }
+
+    private var isActive: Bool {
+        contextManager.isActive(context: context)
+    }
+
+    private var buttonText: String {
+        if isActive && isOptionPressed {
+            return "Close All"
+        } else if isActive {
+            return "Close"
+        } else if isOptionPressed {
+            return "Close Others and Open"
+        } else {
+            return "Open"
+        }
+    }
+
+    private var buttonIcon: String {
+        if isActive && isOptionPressed {
+            return "xmark.circle"
+        } else if isActive {
+            return "xmark"
+        } else if isOptionPressed {
+            return "arrow.triangle.2.circlepath"
+        } else {
+            return "arrow.right.square"
+        }
+    }
+
+    private var buttonBackgroundColor: Color {
+        if isActive && isOptionPressed {
+            return Color.red
+        } else if isActive {
+            return Color.red.opacity(0.8)
+        } else if isOptionPressed {
+            return Color.blue
+        } else {
+            return Color.green
+        }
+    }
+
+    private var buttonHelpText: String {
+        if isActive && isOptionPressed {
+            return "Close all active contexts"
+        } else if isActive {
+            return "Close this context"
+        } else if isOptionPressed {
+            return "Close all active contexts and open this one (Replace All mode)"
+        } else {
+            return "Open this context (Additive mode)"
+        }
+    }
+
+    private func buttonAction() {
+        if isActive && isOptionPressed {
+            contextManager.closeAllContexts()
+        } else if isActive {
+            contextManager.closeContext(context)
+        } else if isOptionPressed {
+            contextManager.closeAllContexts()
+            contextManager.switchToContext(context)
+        } else {
+            contextManager.switchToContext(context)
+        }
     }
 }
 

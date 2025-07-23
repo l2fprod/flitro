@@ -24,6 +24,7 @@ struct ContextEditorView: View {
                 selectedContextID: $selectedContextID,
                 showDeleteAlert: $showDeleteAlert
             )
+            .environmentObject(contextManager)
         } detail: {
             ContextDetailsView(
                 contextManager: contextManager,
