@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContextSidebarView: View {
     @ObservedObject var contextManager: ContextManager
@@ -55,6 +56,9 @@ struct ContextSidebarView: View {
                     )
                     .contentShape(Rectangle())
                     .tag(context.id as UUID?)
+                    .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
+                        UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: context.id)
+                    }
                 }
                 .onMove { indices, newOffset in
                     contextManager.reorderContexts(fromOffsets: indices, toOffset: newOffset)
