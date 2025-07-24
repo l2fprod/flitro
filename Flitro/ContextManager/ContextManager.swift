@@ -88,54 +88,6 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
     }
 }
 
-// Migration helper for old contexts.json
-extension Context {
-    // Accepts a dictionary from JSONSerialization
-    static func migrate(from legacy: [String: Any]) -> Context? {
-        guard let name = legacy["name"] as? String else { return nil }
-        let id = (legacy["id"] as? String).flatMap { UUID(uuidString: $0) } ?? UUID()
-        let iconName = legacy["iconName"] as? String
-        let iconBackgroundColor = legacy["iconBackgroundColor"] as? String
-        let iconForegroundColor = legacy["iconForegroundColor"] as? String
-        let createdAt = (legacy["createdAt"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
-        let lastUsed = (legacy["lastUsed"] as? String).flatMap { ISO8601DateFormatter().date(from: $0) } ?? Date()
-        var items: [ContextItem] = []
-        if let apps = legacy["applications"] as? [[String: Any]] {
-            for appDict in apps {
-                if let data = try? JSONSerialization.data(withJSONObject: appDict),
-                   let app = try? JSONDecoder().decode(AppItem.self, from: data) {
-                    items.append(.application(app))
-                }
-            }
-        }
-        if let docs = legacy["documents"] as? [[String: Any]] {
-            for docDict in docs {
-                if let data = try? JSONSerialization.data(withJSONObject: docDict),
-                   let doc = try? JSONDecoder().decode(DocumentItem.self, from: data) {
-                    items.append(.document(doc))
-                }
-            }
-        }
-        if let tabs = legacy["browserTabs"] as? [[String: Any]] {
-            for tabDict in tabs {
-                if let data = try? JSONSerialization.data(withJSONObject: tabDict),
-                   let tab = try? JSONDecoder().decode(BrowserTab.self, from: data) {
-                    items.append(.browserTab(tab))
-                }
-            }
-        }
-        if let terms = legacy["terminalSessions"] as? [[String: Any]] {
-            for termDict in terms {
-                if let data = try? JSONSerialization.data(withJSONObject: termDict),
-                   let term = try? JSONDecoder().decode(TerminalSession.self, from: data) {
-                    items.append(.terminalSession(term))
-                }
-            }
-        }
-        return Context(id: id, name: name, items: items, iconName: iconName, iconBackgroundColor: iconBackgroundColor, iconForegroundColor: iconForegroundColor, createdAt: createdAt, lastUsed: lastUsed)
-    }
-}
-
 struct AppItem: Identifiable, Codable, Equatable, Hashable {
     var id: UUID = UUID()
     var name: String
@@ -212,21 +164,19 @@ class ContextManager: ObservableObject {
         saveContexts()
     }
   
-    func deleteContext(_ context: Context) {
-        contexts.removeAll { $0.id == context.id }
-        if activeContexts.contains(where: { $0.id == context.id }) {
-            activeContexts.removeAll(where: { $0.id == context.id })
-        }
-        // Remove all launchers for the context
-        contextLaunchers.removeValue(forKey: context.id)
+    func deleteContext(contextID: UUID) {
+        contexts.removeAll { $0.id == contextID }
+        activeContexts.removeAll { $0.id == contextID }
+        contextLaunchers.removeValue(forKey: contextID)
         saveContexts()
     }
     
     // MARK: - Context Switching
     
-    func switchToContext(_ context: Context) {
-        activeContexts.append(context)
-        openContext(context)
+    func switchToContext(contextID: UUID) {
+        guard let latestContext = contexts.first(where: { $0.id == contextID }) else { return }
+        activeContexts.append(latestContext)
+        openContext(contextID: contextID)
         saveContexts()
     }
 
@@ -279,31 +229,75 @@ class ContextManager: ObservableObject {
     }
 
     /// Open all items in the context, batching by app/bundle where possible, using launchers
-    private func openContext(_ context: Context) {
+    private func openContext(contextID: UUID) {
+        guard let contextToOpen = contexts.first(where: { $0.id == contextID }) else { return }
+        print("🚀 Opening context '\(contextToOpen.name)' with \(contextToOpen.items.count) items")
+
         var itemsByBundle: [String: [ContextItem]] = [:]
-        for item in context.items {
+        for item in contextToOpen.items {
             if let bundleId = bundleId(for: item) {
                 itemsByBundle[bundleId, default: []].append(item)
             }
         }
+
         var launchers: [ContextApplicationLauncher] = []
         for (bundleId, items) in itemsByBundle {
             let launcher = launcher(for: bundleId, items: items)
+
+            // Trace which launcher is opening which items
+            let launcherType = String(describing: type(of: launcher))
+            print("📱 Using \(launcherType) for bundle '\(bundleId)' with \(items.count) items:")
+
+            for item in items {
+                switch item {
+                case .application(let app):
+                    print("   • App: \(app.name) (\(app.bundleIdentifier))")
+                    if let windowTitle = app.windowTitle {
+                        print("     Window: \(windowTitle)")
+                    }
+                    if let filePath = app.filePath {
+                        print("     File: \(filePath)")
+                    }
+                case .document(let doc):
+                    print("   • Document: \(doc.name) at \(doc.filePath)")
+                case .browserTab(let tab):
+                    print("   • Browser Tab: \(tab.title) - \(tab.url)")
+                case .terminalSession(let session):
+                    print("   • Terminal Session: \(session.title) in \(session.workingDirectory)")
+                    if let command = session.command {
+                        print("     Command: \(command)")
+                    }
+                }
+            }
+
             launcher.open()
             launchers.append(launcher)
         }
+
         // Store launchers for this context
-        contextLaunchers[context.id] = launchers
+        contextLaunchers[contextToOpen.id] = launchers
+
         // Open terminal sessions directly (not via launcher abstraction)
-        for item in context.items {
+        let terminalSessions = contextToOpen.items.compactMap { item -> TerminalSession? in
+            if case .terminalSession(let session) = item { return session } else { return nil }
+        }
+
+        if !terminalSessions.isEmpty {
+            print("🖥️  Opening \(terminalSessions.count) terminal session(s) directly:")
+        }
+
+        for item in contextToOpen.items {
             if case .terminalSession(let session) = item {
                 let commandToRun: String
                 if let command = session.command, !command.isEmpty {
                     commandToRun = command
                 } else {
+                    print("   ⚠️  Skipping terminal session '\(session.title)' - no command specified")
                     continue // Skip if no command
                 }
                 let workingDir = session.workingDirectory
+                print("   • Terminal: '\(session.title)' in '\(workingDir)' running '\(commandToRun)'")
+
                 let script = """
                 tell application \"Terminal\"
                     activate
@@ -314,11 +308,15 @@ class ContextManager: ObservableObject {
                     var error: NSDictionary? = nil
                     appleScript.executeAndReturnError(&error)
                     if let error = error {
-                        print("Failed to launch terminal session: \(error)")
+                        print("     ❌ Failed to launch terminal session: \(error)")
+                    } else {
+                        print("     ✅ Terminal session launched successfully")
                     }
                 }
             }
         }
+
+        print("✅ Context '\(contextToOpen.name)' opened with \(launchers.count) launcher(s) and \(terminalSessions.count) terminal session(s)")
     }
     
     // MARK: - Context Reordering
@@ -330,16 +328,14 @@ class ContextManager: ObservableObject {
     
     // MARK: - Application Management
     
-    func closeContext(_ context: Context) {
-        // Use launchers to close apps/items
-        if let launchers = contextLaunchers[context.id] {
+    func closeContext(contextID: UUID) {
+        if let launchers = contextLaunchers[contextID] {
             for launcher in launchers {
                 launcher.close()
             }
-            contextLaunchers.removeValue(forKey: context.id)
+            contextLaunchers.removeValue(forKey: contextID)
         }
-        // Remove the context from activeContexts if present
-        activeContexts.removeAll { $0.id == context.id }
+        activeContexts.removeAll { $0.id == contextID }
     }
 
     func closeAllContexts() {
@@ -372,21 +368,9 @@ class ContextManager: ObservableObject {
     private func loadContexts() {
         do {
             let data = try Data(contentsOf: contextsFileURL)
-            do {
-                // Try decoding as new format
-                let decoded = try JSONDecoder().decode([Context].self, from: data)
-                self.contexts = decoded
-            } catch {
-                // Try to migrate from old format
-                if let jsonArray = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]] {
-                    let migrated = jsonArray.compactMap { Context.migrate(from: $0) }
-                    self.contexts = migrated
-                    // Save back in new format
-                    saveContexts()
-                } else {
-                    print("Failed to decode or migrate contexts.json: \(error)")
-                }
-            }
+            // Try decoding as new format
+            let decoded = try JSONDecoder().decode([Context].self, from: data)
+            self.contexts = decoded
         } catch {
             print("No existing contexts.json found or failed to read: \(error)")
         }
@@ -402,8 +386,8 @@ class ContextManager: ObservableObject {
         return nil
     }
 
-    func isActive(context: Context) -> Bool {
-        return activeContexts.contains(where: { $0.id == context.id })
+    func isActive(contextID: UUID) -> Bool {
+        return activeContexts.contains(where: { $0.id == contextID })
     }
 }
 
@@ -454,4 +438,16 @@ extension ContextManager {
         contexts[idx].moveItems(fromOffsets: fromOffsets, toOffset: toOffset)
         saveContexts()
     }
-} 
+}
+
+// Helper to move elements in array
+extension Array {
+    mutating func move(fromOffsets: IndexSet, toOffset: Int) {
+        let elements = fromOffsets.map { self[$0] }
+        // Remove elements at offsets manually
+        for offset in fromOffsets.sorted(by: >) {
+            self.remove(at: offset)
+        }
+        self.insert(contentsOf: elements, at: toOffset)
+    }
+}

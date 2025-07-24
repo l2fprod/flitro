@@ -111,7 +111,7 @@ struct ContextDetailsView: View {
                 let context = contextManager.contexts[contextIdx]
                 VStack(spacing: 0) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        TopRoundedRectangle(radius: 16)
                             .fill(Color(.controlBackgroundColor))
                             .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 2)
                         if context.items.isEmpty {
@@ -136,11 +136,6 @@ struct ContextDetailsView: View {
                             .listStyle(.inset)
                             .background(Color.clear)
                             .clipShape(TopRoundedRectangle(radius: 16))
-                            .overlay(
-                                TopRoundedRectangle(radius: 16)
-                                    .stroke(Color.gray.opacity(0.13), lineWidth: 1)
-                            )
-                            .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 2)
                             .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
                                 UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: selectedContextID)
                             }
@@ -320,7 +315,7 @@ struct ContextButton: View {
     }
 
     private var isActive: Bool {
-        contextManager.isActive(context: context)
+        contextManager.isActive(contextID: context.id)
     }
 
     private var buttonText: String {
@@ -375,12 +370,12 @@ struct ContextButton: View {
         if isActive && isOptionPressed {
             contextManager.closeAllContexts()
         } else if isActive {
-            contextManager.closeContext(context)
+            contextManager.closeContext(contextID: context.id)
         } else if isOptionPressed {
             contextManager.closeAllContexts()
-            contextManager.switchToContext(context)
+            contextManager.switchToContext(contextID: context.id)
         } else {
-            contextManager.switchToContext(context)
+            contextManager.switchToContext(contextID: context.id)
         }
     }
 }

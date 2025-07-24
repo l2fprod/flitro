@@ -89,11 +89,11 @@ struct MenuBarExtraContents: View {
         ForEach(contextManager.contexts, id: \.reactiveId) { context in
             Menu {
                 Button("Open") {
-                    contextManager.switchToContext(context)
+                    contextManager.switchToContext(contextID: context.id)
                 }
                 Divider()
                 Button("Close") {
-                    contextManager.closeContext(context)
+                    contextManager.closeContext(contextID: context.id)
                 }
             } label: {
                 HStack {

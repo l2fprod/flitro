@@ -83,13 +83,13 @@ struct ContextCardView: View {
         }
         .contextMenu {
             Button("Open") {
-                contextManager.switchToContext(context)
+                contextManager.switchToContext(contextID: context.id)
             }
-            .disabled(contextManager.isActive(context: context))
+            .disabled(contextManager.isActive(contextID: context.id))
             Button("Close") {
-                contextManager.closeContext(context)
+                contextManager.closeContext(contextID: context.id)
             }
-            .disabled(!contextManager.isActive(context: context))
+            .disabled(!contextManager.isActive(contextID: context.id))
             Button("Change Icon...") {
                 showIconSelector = true
             }
