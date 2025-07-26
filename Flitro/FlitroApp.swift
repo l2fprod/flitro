@@ -16,8 +16,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
-
         if let window = NSApp.windows.first {
             window.delegate = self
         }
@@ -57,6 +55,14 @@ struct ContentView: View {
 @main
 struct FlitroApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+
+    init() {
+        // Ensure updaterController is initialized before any scene
+        if appDelegate.updaterController == nil {
+            appDelegate.updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
@@ -80,7 +86,11 @@ struct FlitroApp: App {
             MenuBarExtraContents().environmentObject(ContextManager.shared)
         }
         Settings {
-            SettingsView()
+            if let updater = appDelegate.updaterController?.updater {
+                SettingsView(updater: updater)
+            } else {
+                Text("Updater not available")
+            }
         }
         WindowGroup("About Flitro", id: "about") {
             AboutView()
