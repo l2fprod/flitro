@@ -59,6 +59,11 @@ struct FlitroApp: App {
         .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)
         .commands {
+            CommandGroup(replacing: .appInfo) {
+                Button("About Flitro!") {
+                    openWindow(id: "about")
+                }
+            }
             SingleWindowCommands()
         }
         MenuBarExtra("Flitro", systemImage: "rectangle.3.offgrid") {
@@ -67,7 +72,14 @@ struct FlitroApp: App {
         Settings {
             SettingsView()
         }
+        Window("About Flitro!", id: "about") {
+            AboutView()
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
     }
+
+    @Environment(\.openWindow) var openWindow
 }
 
 struct MenuBarExtraContents: View {
