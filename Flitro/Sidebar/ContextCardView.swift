@@ -9,8 +9,9 @@ struct ContextCardView: View {
     let isSelected: Bool
     let onIconChange: (String?, String?, String?) -> Void
     
-    @State private var isHovered = false
     @State private var showIconSelector = false
+    @State private var iconRotation: Double = 0
+    @State private var cardScale: CGFloat = 1.0
     @EnvironmentObject private var contextManager: ContextManager
     
     private var iconColor: Color {
@@ -32,6 +33,10 @@ struct ContextCardView: View {
         return "\(total) items"
     }
     
+    private var isActive: Bool {
+        contextManager.isActive(contextID: context.id)
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
             // Icon
@@ -46,22 +51,26 @@ struct ContextCardView: View {
                             .fill(Color(NSColor.windowBackgroundColor))
                             .frame(width: 32, height: 32)
                     }
-                    if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
-                        icon.regular
-                            .font(.title2)
-                            .foregroundColor(foregroundColor)
-                    } else {
-                        Image(systemName: "folder")
-                            .font(.title2)
-                            .foregroundColor(foregroundColor)
+                    Group {
+                        if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
+                            icon.regular
+                                .font(.title2)
+                                .foregroundColor(foregroundColor)
+                        } else {
+                            Image(systemName: "folder")
+                                .font(.title2)
+                                .foregroundColor(foregroundColor)
+                        }
                     }
+                    .rotationEffect(.degrees(iconRotation))
+                    .animation(.spring(response: 0.5, dampingFraction: 0.6), value: iconRotation)
                 }
             }
             .frame(width: 32, height: 32)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(context.name)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
                     .lineLimit(2)
                     .truncationMode(.tail)
                     .multilineTextAlignment(.leading)
@@ -77,10 +86,8 @@ struct ContextCardView: View {
         }
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
-        .onHover { hovering in
-            isHovered = hovering
-        }
+        .scaleEffect(cardScale)
+        .animation(.spring(response: 0.5, dampingFraction: 0.7), value: cardScale)
         .contextMenu {
             Button("Open") {
                 contextManager.switchToContext(contextID: context.id)
@@ -108,5 +115,18 @@ struct ContextCardView: View {
                 }
             )
         }
+        .onAppear {
+            iconRotation = isActive ? 360 : 0
+            cardScale = isActive ? 1.04 : 1.0
+        }
+        .onChange(of: isActive) { active, _ in
+            if active {
+                iconRotation = 360
+                cardScale = 1.04
+            } else {
+                iconRotation = 0
+                cardScale = 1.0
+            }
+        }
     }
-} 
+}
