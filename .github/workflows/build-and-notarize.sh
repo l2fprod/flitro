@@ -44,7 +44,7 @@ security import build/certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_P
 security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
 
 # Sign the app
-codesign --force --options runtime --keychain build.keychain --sign "$APPLE_CERTIFICATE_IDENTITY" --entitlements Flitro/Flitro.entitlements build/Release/Flitro.app
+codesign --force --options runtime --deep --keychain build.keychain --sign "$APPLE_CERTIFICATE_IDENTITY" --entitlements Flitro/Flitro.entitlements build/Release/Flitro.app
 
 # Create a zip file for notarization
 (cd build/Release && ditto -c -k --keepParent Flitro.app Flitro-to-notarize.zip)
@@ -61,3 +61,35 @@ xcrun stapler staple build/Release/Flitro.app
           
 # Create the final zip file with the notarized app
 (cd build/Release && ditto -c -k --keepParent Flitro.app Flitro.zip)
+
+# Generate Sparkle appcast XML for auto-update
+APP_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" build/Release/Flitro.app/Contents/Info.plist)
+ZIP_PATH="build/Release/Flitro.zip"
+ZIP_SIZE=$(stat -f%z "$ZIP_PATH")
+ZIP_SHA256=$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')
+APPCAST_PATH="build/Release/appcast.xml"
+
+cat > "$APPCAST_PATH" <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"
+     xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Flitro Updates</title>
+    <link>https://github.com/l2fprod/flitro/releases/latest</link>
+    <description>Latest updates for Flitro</description>
+    <language>en</language>
+    <item>
+      <title>Version $APP_VERSION</title>
+      <description>Latest release of Flitro.</description>
+      <pubDate>$(date -u "+%a, %d %b %Y %H:%M:%S GMT")</pubDate>
+      <enclosure
+        url="https://github.com/l2fprod/flitro/releases/download/latest/Flitro.zip"
+        sparkle:version="$APP_VERSION"
+        length="$ZIP_SIZE"
+        type="application/zip"
+        sparkle:sha256="$ZIP_SHA256"/>
+    </item>
+  </channel>
+</rss>
+EOF

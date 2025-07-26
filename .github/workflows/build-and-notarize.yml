@@ -58,6 +58,7 @@ jobs:
           tag_name: latest
           files: |
             build/Release/Flitro.zip
+            build/Release/appcast.xml
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

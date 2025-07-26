@@ -1,9 +1,12 @@
 import SwiftUI
 import AppKit
 import PhosphorSwift
+import Sparkle
 
 // MARK: - App Delegate for Window Reopen and Hide-on-Close
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    var updaterController: SPUStandardUpdaterController?
+
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if let window = sender.windows.first {
             window.makeKeyAndOrderFront(nil)
@@ -13,6 +16,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        updaterController = SPUStandardUpdaterController(startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil)
+
         if let window = NSApp.windows.first {
             window.delegate = self
         }
@@ -62,6 +67,11 @@ struct FlitroApp: App {
             CommandGroup(replacing: .appInfo) {
                 Button("About Flitro") {
                     openWindow(id: "about")
+                }
+                Button("Check for Updates...") {
+                    if let updater = appDelegate.updaterController?.updater {
+                        updater.checkForUpdates()
+                    }
                 }
             }
             SingleWindowCommands()

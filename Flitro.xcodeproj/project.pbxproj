@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		B6391C292E3545360058FFEF /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = B6391C282E3545360058FFEF /* Sparkle */; };
 		B63A63842E20A1410032C498 /* PhosphorSwift in Frameworks */ = {isa = PBXBuildFile; productRef = B63A63832E20A1410032C498 /* PhosphorSwift */; };
 /* End PBXBuildFile section */
 
@@ -28,14 +29,28 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		B6391C272E3544C90058FFEF /* Sparkle */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Sparkle; path = "/Users/fred/Library/Developer/Xcode/DerivedData/Flitro-dyatavryfemegjdgwpkciseqozpa/SourcePackages/checkouts/Sparkle"; sourceTree = "<absolute>"; };
 		B65885DD2E196B0600F19C4A /* Flitro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flitro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B65885EB2E196B0700F19C4A /* FlitroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlitroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B65885F52E196B0700F19C4A /* FlitroUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlitroUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		B6391C2B2E3545790058FFEF /* Exceptions for "Flitro" folder in "Flitro" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = B65885DC2E196B0600F19C4A /* Flitro */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		B65885DF2E196B0600F19C4A /* Flitro */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				B6391C2B2E3545790058FFEF /* Exceptions for "Flitro" folder in "Flitro" target */,
+			);
 			path = Flitro;
 			sourceTree = "<group>";
 		};
@@ -57,6 +72,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B63A63842E20A1410032C498 /* PhosphorSwift in Frameworks */,
+				B6391C292E3545360058FFEF /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -77,12 +93,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		B6391C262E3544C90058FFEF /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				B6391C272E3544C90058FFEF /* Sparkle */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		B65885D42E196B0600F19C4A = {
 			isa = PBXGroup;
 			children = (
 				B65885DF2E196B0600F19C4A /* Flitro */,
 				B65885EE2E196B0700F19C4A /* FlitroTests */,
 				B65885F82E196B0700F19C4A /* FlitroUITests */,
+				B6391C262E3544C90058FFEF /* Frameworks */,
 				B65885DE2E196B0600F19C4A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -118,6 +143,7 @@
 			name = Flitro;
 			packageProductDependencies = (
 				B63A63832E20A1410032C498 /* PhosphorSwift */,
+				B6391C282E3545360058FFEF /* Sparkle */,
 			);
 			productName = Flitro;
 			productReference = B65885DD2E196B0600F19C4A /* Flitro.app */;
@@ -203,6 +229,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				B63A63822E20A1410032C498 /* XCRemoteSwiftPackageReference "swift" */,
+				B6391C252E3544870058FFEF /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = B65885DE2E196B0600F19C4A /* Products */;
@@ -413,6 +440,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Flitro/Info.plist;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Flitro needs to control external applications to run automation in your contexts.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Frederic Lavigne";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -444,6 +472,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Flitro/Info.plist;
 				INFOPLIST_KEY_NSAppleEventsUsageDescription = "Flitro needs to control external applications to run automation in your contexts.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "© 2025 Frederic Lavigne";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -566,6 +595,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		B6391C252E3544870058FFEF /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = exactVersion;
+				version = 2.7.1;
+			};
+		};
 		B63A63822E20A1410032C498 /* XCRemoteSwiftPackageReference "swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/phosphor-icons/swift";
@@ -577,6 +614,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		B6391C282E3545360058FFEF /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = B6391C252E3544870058FFEF /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
 		B63A63832E20A1410032C498 /* PhosphorSwift */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = B63A63822E20A1410032C498 /* XCRemoteSwiftPackageReference "swift" */;
