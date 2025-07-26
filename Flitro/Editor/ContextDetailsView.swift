@@ -309,8 +309,12 @@ struct ContextButton: View {
         .buttonStyle(.plain)
         .help(buttonHelpText)
         .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
-            // Check for Option key state periodically
-            isOptionPressed = NSEvent.modifierFlags.contains(.option)
+            // Only track Option key when window is active
+            if NSApp.isActive {
+                isOptionPressed = NSEvent.modifierFlags.contains(.option)
+            } else {
+                isOptionPressed = false
+            }
         }
     }
 
