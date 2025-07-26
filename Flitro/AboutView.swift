@@ -83,7 +83,7 @@ struct AboutView: View {
                     .padding(.top, 8)
                 // App version and copyright
                 VStack(spacing: 4) {
-                    Text("Version " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"))
+                    Text("Version " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-") + " (Build " + (Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "-") + ")")
                         .font(.footnote)
                         .foregroundColor(.white.opacity(0.7))
                     Text(Bundle.main.infoDictionary?["NSHumanReadableCopyright"] as? String ?? "")
