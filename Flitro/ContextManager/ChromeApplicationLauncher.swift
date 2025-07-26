@@ -1,4 +1,3 @@
-
 import Foundation
 import AppKit
 
@@ -30,11 +29,14 @@ class ChromeApplicationLauncher: ContextApplicationLauncher {
             repeat with theUrl in tabUrls
                 tell window id winId to make new tab with properties {URL:theUrl}
             end repeat
-            -- Remove the default blank tab
-            if (count of tabs of window id winId) > (count of tabUrls) then
-                try
+            -- Close all tabs except the last N (our tabs)
+            set totalTabs to count of tabs of window id winId
+            set tabsToKeep to \(urls.count)
+            set tabsToClose to totalTabs - tabsToKeep
+            if tabsToClose > 0 then
+                repeat with i from 1 to tabsToClose
                     close tab 1 of window id winId
-                end try
+                end repeat
             end if
             return winId
         end tell
@@ -54,6 +56,11 @@ class ChromeApplicationLauncher: ContextApplicationLauncher {
         let script = """
         tell application \"Google Chrome\"
             if (exists window id \(winId)) then
+                -- Close all tabs in the window
+                set tabCount to count of tabs of window id \(winId)
+                repeat with i from tabCount to 0 by -1
+                    close tab i of window id \(winId)
+                end repeat
                 try
                     close window id \(winId)
                 end try
