@@ -81,6 +81,16 @@ struct AboutView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .shadow(color: Color.pink.opacity(0.2), radius: 8, x: 0, y: 4)
                     .padding(.top, 8)
+                // App version and copyright
+                VStack(spacing: 4) {
+                    Text("Version " + (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "-"))
+                        .font(.footnote)
+                        .foregroundColor(.white.opacity(0.7))
+                    Text(Bundle.main.infoDictionary?["NSHumanReadableCopyright"] as? String ?? "")
+                        .font(.footnote)
+                        .foregroundColor(.white.opacity(0.5))
+                }
+                .padding(.top, 12)
             }
         }
     }

@@ -60,7 +60,7 @@ struct FlitroApp: App {
         .windowResizability(.contentSize)
         .commands {
             CommandGroup(replacing: .appInfo) {
-                Button("About Flitro!") {
+                Button("About Flitro") {
                     openWindow(id: "about")
                 }
             }
@@ -72,7 +72,7 @@ struct FlitroApp: App {
         Settings {
             SettingsView()
         }
-        Window("About Flitro!", id: "about") {
+        WindowGroup("About Flitro", id: "about") {
             AboutView()
                 .frame(width: 360, height: 600)
         }
