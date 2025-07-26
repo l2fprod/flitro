@@ -43,8 +43,8 @@ struct AboutView: View {
                 }
                 Text("Flitro")
                     .font(.system(size: 40, weight: .heavy, design: .rounded))
-                    .foregroundStyle(LinearGradient(gradient: Gradient(colors: [Color.purple, Color.pink]), startPoint: .leading, endPoint: .trailing))
-                    .shadow(color: Color.purple.opacity(0.18), radius: 3, x: 0, y: 2)
+                    .foregroundColor(.white)
+                    .shadow(color: Color.white.opacity(0.35), radius: 6, x: 0, y: 2)
                 Text("Fast‑track Your Flow.")
                     .font(.title2)
                     .foregroundColor(.white.opacity(0.85))
