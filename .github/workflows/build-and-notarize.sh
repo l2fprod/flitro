@@ -62,8 +62,14 @@ xcrun stapler staple build/Release/Flitro.app
 # Create the final zip file with the notarized app
 (cd build/Release && ditto -c -k --keepParent Flitro.app Flitro.zip)
 
+# Set CFBundleVersion to build number (timestamp)
+BUILD_NUMBER=$(date -u "+%Y%m%d%H%M")
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" build/Release/Flitro.app/Contents/Info.plist
+
+# Get base version from built Info.plist
+BASE_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" build/Release/Flitro.app/Contents/Info.plist)
+
 # Generate Sparkle appcast XML for auto-update
-APP_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" build/Release/Flitro.app/Contents/Info.plist)
 ZIP_PATH="build/Release/Flitro.zip"
 ZIP_SIZE=$(stat -f%z "$ZIP_PATH")
 ZIP_SHA256=$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')
@@ -80,12 +86,13 @@ cat > "$APPCAST_PATH" <<EOF
     <description>Latest updates for Flitro</description>
     <language>en</language>
     <item>
-      <title>Version $APP_VERSION</title>
+      <title>Version $BASE_VERSION (build $BUILD_NUMBER)</title>
       <description>Latest release of Flitro.</description>
+      <sparkle:version>$BUILD_NUMBER</sparkle:version>
+      <sparkle:shortVersionString>$BASE_VERSION</sparkle:shortVersionString>
       <pubDate>$(date -u "+%a, %d %b %Y %H:%M:%S GMT")</pubDate>
       <enclosure
         url="https://github.com/l2fprod/flitro/releases/download/latest/Flitro.zip"
-        sparkle:version="$APP_VERSION"
         length="$ZIP_SIZE"
         type="application/zip"
         sparkle:sha256="$ZIP_SHA256"/>
