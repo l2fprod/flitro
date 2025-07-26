@@ -27,7 +27,13 @@ echo "Found app at: $APP_PATH"
 
 # Create a directory for the release
 mkdir -p build/Release
+
+# Copy the app
 cp -R $APP_PATH build/Release
+
+# Set CFBundleVersion to build number (timestamp)
+BUILD_NUMBER=$(date -u "+%Y%m%d%H%M")
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" build/Release/Flitro.app/Contents/Info.plist
 
 # Create a temporary keychain
 echo "Creating keychain..."
@@ -61,10 +67,6 @@ xcrun stapler staple build/Release/Flitro.app
           
 # Create the final zip file with the notarized app
 (cd build/Release && ditto -c -k --keepParent Flitro.app Flitro.zip)
-
-# Set CFBundleVersion to build number (timestamp)
-BUILD_NUMBER=$(date -u "+%Y%m%d%H%M")
-/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" build/Release/Flitro.app/Contents/Info.plist
 
 # Get base version from built Info.plist
 BASE_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" build/Release/Flitro.app/Contents/Info.plist)
