@@ -74,6 +74,7 @@ struct FlitroApp: App {
         }
         Window("About Flitro!", id: "about") {
             AboutView()
+                .frame(width: 360, height: 600)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
