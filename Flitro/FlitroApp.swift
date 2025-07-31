@@ -8,15 +8,16 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var updaterController: SPUStandardUpdaterController?
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        if let window = sender.windows.first {
-            window.makeKeyAndOrderFront(nil)
-            NSApp.setActivationPolicy(.regular)
-        }
+        showMainWindow()
         return true
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if let window = NSApp.windows.first {
+        // Find the main window (not status bar windows) to set as delegate
+        if let window = NSApp.windows.first(where: {
+            String(describing: type(of: $0)) != "NSStatusBarWindow" &&
+            $0.level == .normal
+        }) {
             window.delegate = self
         }
     }
@@ -83,7 +84,8 @@ struct FlitroApp: App {
             SingleWindowCommands()
         }
         MenuBarExtra("Flitro", systemImage: "rectangle.3.offgrid") {
-            MenuBarExtraContents().environmentObject(ContextManager.shared)
+            MenuBarExtraContents(updater: appDelegate.updaterController?.updater)
+                .environmentObject(ContextManager.shared)
         }
         Settings {
             if let updater = appDelegate.updaterController?.updater {
@@ -103,22 +105,43 @@ struct FlitroApp: App {
     @Environment(\.openWindow) var openWindow
 }
 
+func showMainWindow() {
+    // First activate the app to ensure it can receive focus
+    NSApp.setActivationPolicy(.regular)
+    NSApp.activate(ignoringOtherApps: true)
+
+    // Find the main window (not status bar windows)
+    if let window = NSApp.windows.first(where: {
+        String(describing: type(of: $0)) != "NSStatusBarWindow" &&
+        $0.level == .normal
+    }) {
+        if !window.isVisible {
+            window.orderFrontRegardless()
+        }
+        window.makeKeyAndOrderFront(nil)
+    }
+}
+
+struct SingleWindowCommands: Commands {
+    var body: some Commands {
+        CommandGroup(replacing: .newItem) {
+            // No "New Window" or "New..." items
+        }
+        CommandGroup(after: .newItem) {
+            Button("Open Window") {
+                showMainWindow()
+            }
+            .keyboardShortcut("0", modifiers: [.command])
+        }
+    }
+}
+
 struct MenuBarExtraContents: View {
     @EnvironmentObject var contextManager: ContextManager
+    @Environment(\.openSettings) private var openSettings
+    let updater: SPUUpdater?
 
     var body: some View {
-        Button("Configure") {
-            // First activate the app to ensure it can receive focus
-            NSApp.setActivationPolicy(.regular)
-            NSApp.activate(ignoringOtherApps: true)
-
-            // Then bring the window to front
-            if let window = NSApp.windows.first {
-                window.makeKeyAndOrderFront(nil)
-                window.orderFrontRegardless()
-            }
-        }
-        Divider()
         ForEach(contextManager.contexts, id: \.reactiveId) { context in
             Menu {
                 Button("Open") {
@@ -134,6 +157,17 @@ struct MenuBarExtraContents: View {
                     Text(context.name)
                 }
             }
+        }
+        Divider()
+        Button("Show Flitro") {
+            showMainWindow()
+        }
+        Divider()
+        Button("Check for Updates...") {
+            updater?.checkForUpdates()
+        }
+        Button("Settings") {
+            openSettings()
         }
         Divider()
         Button("Quit") { NSApp.terminate(nil) }
