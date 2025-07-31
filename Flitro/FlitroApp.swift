@@ -158,7 +158,9 @@ struct MenuBarExtraContents: View {
                 }
             }
         }
-        Divider()
+        if !contextManager.contexts.isEmpty {
+            Divider()
+        }
         Button("Show Flitro") {
             showMainWindow()
         }
