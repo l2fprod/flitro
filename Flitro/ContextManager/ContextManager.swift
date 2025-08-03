@@ -127,33 +127,23 @@ class ContextManager: ObservableObject {
     
     // Store launchers per context
     private var contextLaunchers: [UUID: [ContextApplicationLauncher]] = [:]
-    
-    // Restore missing file URL properties for persistence
-    private let appName = Bundle.main.bundleIdentifier ?? "Flitro"
-    private let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-    private var appDirectory: URL {
-        let dir = appSupportURL.appendingPathComponent(appName, isDirectory: true)
-        // Ensure the directory exists
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
-        return dir
-    }
-    private var contextsFileURL: URL {
-        appDirectory.appendingPathComponent("contexts.json")
-    }
-    
-    /// Helper to get the bundle identifier of the system default browser
-    private func getDefaultBrowserBundleId() -> String? {
-        let workspace = NSWorkspace.shared
-        guard let httpURL = URL(string: "http://example.com") else {
-            return nil
-        }
-        if let appURL = workspace.urlForApplication(toOpen: httpURL) {
-            return Bundle(url: appURL)?.bundleIdentifier
-        }
-        return nil
-    }
+    private var contextsFileURL: URL
 
-    init() {
+    public private(set) var analyticsManager: AnalyticsManager
+
+    private init() {
+        let appName = Bundle.main.bundleIdentifier ?? "Flitro"
+        let appSupportURL = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        var appDirectory: URL {
+            let dir = appSupportURL.appendingPathComponent(appName, isDirectory: true)
+            // Ensure the directory exists
+            try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true, attributes: nil)
+            return dir
+        }
+        contextsFileURL = appDirectory.appendingPathComponent("contexts.json")
+        analyticsManager = AnalyticsManager(contextsFileURL: contextsFileURL)
+        addListener(analyticsManager)
+
         loadContexts()
     }
     
@@ -162,6 +152,7 @@ class ContextManager: ObservableObject {
     func addContext(_ context: Context) {
         contexts.append(context)
         saveContexts()
+        listeners.forEach { $0.contextDidCreate(contextID: context.id) }
     }
   
     func deleteContext(contextID: UUID) {
@@ -178,6 +169,18 @@ class ContextManager: ObservableObject {
         activeContexts.append(latestContext)
         openContext(contextID: contextID)
         saveContexts()
+    }
+
+    /// Helper to get the bundle identifier of the system default browser
+    private func getDefaultBrowserBundleId() -> String? {
+        let workspace = NSWorkspace.shared
+        guard let httpURL = URL(string: "http://example.com") else {
+            return nil
+        }
+        if let appURL = workspace.urlForApplication(toOpen: httpURL) {
+            return Bundle(url: appURL)?.bundleIdentifier
+        }
+        return nil
     }
 
     /// Determine the bundle identifier for a ContextItem
@@ -226,6 +229,16 @@ class ContextManager: ObservableObject {
         default:
             return DefaultApplicationLauncher(bundleIdentifier: bundleId, items: items)
         }
+    }
+
+    // MARK: - Listener Support
+    private var listeners: [ContextManagerListener] = []
+    
+    func addListener(_ listener: ContextManagerListener) {
+        listeners.append(listener)
+    }
+    func removeListener(_ listener: ContextManagerListener) {
+        listeners.removeAll { $0 === listener }
     }
 
     /// Open all items in the context, batching by app/bundle where possible, using launchers
@@ -317,6 +330,8 @@ class ContextManager: ObservableObject {
         }
 
         print("✅ Context '\(contextToOpen.name)' opened with \(launchers.count) launcher(s) and \(terminalSessions.count) terminal session(s)")
+        // Notify listeners
+        listeners.forEach { $0.contextDidOpen(contextID: contextID) }
     }
     
     // MARK: - Context Reordering
@@ -336,6 +351,8 @@ class ContextManager: ObservableObject {
             contextLaunchers.removeValue(forKey: contextID)
         }
         activeContexts.removeAll { $0.id == contextID }
+        // Notify listeners
+        listeners.forEach { $0.contextDidClose(contextID: contextID) }
     }
 
     func closeAllContexts() {
@@ -347,6 +364,8 @@ class ContextManager: ObservableObject {
                 }
                 contextLaunchers.removeValue(forKey: context.id)
             }
+            // Notify listeners for each context
+            listeners.forEach { $0.contextDidClose(contextID: context.id) }
         }
         activeContexts.removeAll()
     }
