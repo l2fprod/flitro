@@ -29,7 +29,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		B6391C272E3544C90058FFEF /* Sparkle */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = Sparkle; path = "/Users/fred/Library/Developer/Xcode/DerivedData/Flitro-dyatavryfemegjdgwpkciseqozpa/SourcePackages/checkouts/Sparkle"; sourceTree = "<absolute>"; };
 		B65885DD2E196B0600F19C4A /* Flitro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Flitro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B65885EB2E196B0700F19C4A /* FlitroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlitroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B65885F52E196B0700F19C4A /* FlitroUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FlitroUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -93,21 +92,12 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		B6391C262E3544C90058FFEF /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				B6391C272E3544C90058FFEF /* Sparkle */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		B65885D42E196B0600F19C4A = {
 			isa = PBXGroup;
 			children = (
 				B65885DF2E196B0600F19C4A /* Flitro */,
 				B65885EE2E196B0700F19C4A /* FlitroTests */,
 				B65885F82E196B0700F19C4A /* FlitroUITests */,
-				B6391C262E3544C90058FFEF /* Frameworks */,
 				B65885DE2E196B0600F19C4A /* Products */,
 			);
 			sourceTree = "<group>";
