@@ -81,6 +81,24 @@ struct ContextSidebarView: View {
             RoundedRectangle(cornerRadius: 6)
                 .stroke(Color.gray.opacity(0.15), lineWidth: context.id == selectedContextID ? 0 : 1)
         )
+        .help(analyticsTooltip(for: context.id))
+    }
+    
+    private func analyticsTooltip(for contextID: UUID) -> String {
+        let analyticsManager = contextManager.analyticsManager
+        let openCount = analyticsManager.getOpenCount(for: contextID)
+        let lastOpen = analyticsManager.getLastOpenEvents(for: contextID).last
+        let lastClose = analyticsManager.getLastCloseEvents(for: contextID).last
+        let relativeFormatter = RelativeDateTimeFormatter()
+        relativeFormatter.unitsStyle = .full
+        var tooltip = "Opens: \(openCount)"
+        if let lastOpen = lastOpen {
+            tooltip += "\nLast opened: " + relativeFormatter.localizedString(for: lastOpen, relativeTo: Date())
+        }
+        if let lastClose = lastClose {
+            tooltip += "\nLast closed: " + relativeFormatter.localizedString(for: lastClose, relativeTo: Date())
+        }
+        return tooltip
     }
     
     var body: some View {
