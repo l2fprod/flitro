@@ -13,6 +13,17 @@ class AddAppDialogViewModel: ObservableObject {
     @Published var browseWindowTitle: String = ""
     @Published var showOpenPanel = false
     
+    init(initialApp: AppItem? = nil) {
+        if let app = initialApp {
+            self.browseAppName = app.name
+            self.browseBundle = app.bundleIdentifier
+            self.browseWindowTitle = app.windowTitle ?? ""
+            self.manualName = app.name
+            self.manualBundle = app.bundleIdentifier
+            self.manualWindowTitle = app.windowTitle ?? ""
+        }
+    }
+    
     func createAppItem() -> AppItem? {
         if selectedTab == .browse {
             return AppItem(name: browseAppName, bundleIdentifier: browseBundle, windowTitle: browseWindowTitle.isEmpty ? nil : browseWindowTitle)
@@ -344,9 +355,15 @@ struct InputField: View {
 }
 
 struct AddAppDialog: View {
-    @StateObject private var viewModel = AddAppDialogViewModel()
+    @StateObject private var viewModel: AddAppDialogViewModel
     var onAdd: (AppItem) -> Void
     var onCancel: () -> Void
+    
+    init(initialApp: AppItem? = nil, onAdd: @escaping (AppItem) -> Void, onCancel: @escaping () -> Void) {
+        _viewModel = StateObject(wrappedValue: AddAppDialogViewModel(initialApp: initialApp))
+        self.onAdd = onAdd
+        self.onCancel = onCancel
+    }
     
     var body: some View {
         GenericDialog(

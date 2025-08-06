@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 class AddTerminalDialogViewModel: ObservableObject {
     @Published var termTitle: String = ""
@@ -6,6 +7,14 @@ class AddTerminalDialogViewModel: ObservableObject {
     @Published var command: String = ""
     @Published var showDirectoryPicker: Bool = false
     @Published var showScriptPicker: Bool = false
+    
+    init(initialSession: TerminalSession? = nil) {
+        if let session = initialSession {
+            self.termTitle = session.title
+            self.workingDirectory = session.workingDirectory
+            self.command = session.command ?? ""
+        }
+    }
     
     func createTerminalSession() -> TerminalSession {
         TerminalSession(workingDirectory: workingDirectory, command: command.isEmpty ? nil : command, title: termTitle)
@@ -17,9 +26,15 @@ class AddTerminalDialogViewModel: ObservableObject {
 }
 
 struct AddTerminalDialog: View {
-    @StateObject private var viewModel = AddTerminalDialogViewModel()
+    @StateObject private var viewModel: AddTerminalDialogViewModel
     var onAdd: (TerminalSession) -> Void
     var onCancel: () -> Void
+    
+    init(initialSession: TerminalSession? = nil, onAdd: @escaping (TerminalSession) -> Void, onCancel: @escaping () -> Void) {
+        _viewModel = StateObject(wrappedValue: AddTerminalDialogViewModel(initialSession: initialSession))
+        self.onAdd = onAdd
+        self.onCancel = onCancel
+    }
     
     var body: some View {
         GenericDialog(

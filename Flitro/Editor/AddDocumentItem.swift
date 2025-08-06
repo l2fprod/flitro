@@ -9,6 +9,15 @@ class AddDocumentDialogViewModel: ObservableObject {
     @Published var showOpenPanel = false
     @Published var bookmark: Data? = nil
     
+    init(initialDocument: DocumentItem? = nil) {
+        if let doc = initialDocument {
+            self.docName = doc.name
+            self.docPath = doc.filePath
+            self.docApp = doc.application
+            self.bookmark = doc.bookmark
+        }
+    }
+    
     func createDocumentItem() -> DocumentItem {
         return DocumentItem(name: docName, filePath: docPath, application: docApp.isEmpty ? "" : docApp, bookmark: bookmark)
     }
@@ -170,9 +179,15 @@ struct AddDocumentDialogContent: View {
 }
 
 struct AddDocumentDialog: View {
-    @StateObject private var viewModel = AddDocumentDialogViewModel()
+    @StateObject private var viewModel: AddDocumentDialogViewModel
     var onAdd: (DocumentItem) -> Void
     var onCancel: () -> Void
+    
+    init(initialDocument: DocumentItem? = nil, onAdd: @escaping (DocumentItem) -> Void, onCancel: @escaping () -> Void) {
+        _viewModel = StateObject(wrappedValue: AddDocumentDialogViewModel(initialDocument: initialDocument))
+        self.onAdd = onAdd
+        self.onCancel = onCancel
+    }
     
     var body: some View {
         GenericDialog(

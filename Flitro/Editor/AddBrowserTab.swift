@@ -6,6 +6,14 @@ class AddBrowserTabDialogViewModel: ObservableObject {
     @Published var selectedBrowser: String = "Default"
     let availableBrowsers = ["Safari", "Chrome", /*"Firefox",*/ "Default"]
     
+    init(initialTab: BrowserTab? = nil) {
+        if let tab = initialTab {
+            self.tabTitle = tab.title
+            self.tabURL = tab.url
+            self.selectedBrowser = tab.browser.capitalized
+        }
+    }
+    
     func createBrowserTab() -> BrowserTab {
         let browser = selectedBrowser == "Default" ? "default" : selectedBrowser
         return BrowserTab(
@@ -105,9 +113,15 @@ struct AddBrowserTabDialogContent: View {
 }
 
 struct AddBrowserTabDialog: View {
-    @StateObject private var viewModel = AddBrowserTabDialogViewModel()
+    @StateObject private var viewModel: AddBrowserTabDialogViewModel
     var onAdd: (BrowserTab) -> Void
     var onCancel: () -> Void
+    
+    init(initialTab: BrowserTab? = nil, onAdd: @escaping (BrowserTab) -> Void, onCancel: @escaping () -> Void) {
+        _viewModel = StateObject(wrappedValue: AddBrowserTabDialogViewModel(initialTab: initialTab))
+        self.onAdd = onAdd
+        self.onCancel = onCancel
+    }
     
     var body: some View {
         GenericDialog(

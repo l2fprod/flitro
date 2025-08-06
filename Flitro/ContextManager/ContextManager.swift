@@ -85,6 +85,10 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
     mutating func moveItems(fromOffsets: IndexSet, toOffset: Int) {
         items.move(fromOffsets: fromOffsets, toOffset: toOffset)
     }
+    mutating func updateItem(at index: Int, with newItem: ContextItem) {
+        guard items.indices.contains(index) else { return }
+        items[index] = newItem
+    }
 }
 
 struct AppItem: Identifiable, Codable, Equatable, Hashable {

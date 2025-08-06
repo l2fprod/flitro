@@ -9,6 +9,7 @@ struct ContextItemRow: View {
     let contextManager: ContextManager
     let onOpen: (() -> Void)?
     let onDelete: (() -> Void)?
+    let onEdit: (() -> Void)?
     
     var body: some View {
         HStack(spacing: 16) {
@@ -41,17 +42,22 @@ struct ContextItemRow: View {
                 .buttonStyle(.plain)
                 .help("Open")
             }
-            if let onDelete = onDelete {
-                Button(action: onDelete) {
-                    Image(systemName: "trash").foregroundColor(.red)
-                }
-                .buttonStyle(.plain)
-                .help("Delete")
-            }
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 8)
         .contentShape(Rectangle())
+        .contextMenu {
+            if let onEdit = onEdit {
+                Button(action: onEdit) {
+                    Label("Edit", systemImage: "pencil")
+                }
+            }
+            if let onDelete = onDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
     }
     
     private var icon: String {
@@ -93,6 +99,11 @@ struct ContextItemRow: View {
     }
 }
 
+// Helper struct for sheet(item:)
+private struct EditingIndex: Identifiable, Equatable {
+    let id: Int
+}
+
 struct ContextDetailsView: View {
     @ObservedObject var contextManager: ContextManager
     @Binding var selectedContextID: UUID?
@@ -104,6 +115,10 @@ struct ContextDetailsView: View {
     @State private var isEditingTitle = false
     @State private var draftTitle = ""
     @State private var showAddMenu = false
+    
+    // New: Editing state for context items
+    @State private var editingItemIndex: EditingIndex? = nil
+    @State private var editingItemType: ContextItem? = nil
     
     var body: some View {
         ZStack {
@@ -192,6 +207,67 @@ struct ContextDetailsView: View {
                     .presentationDragIndicator(.visible)
                     .presentationCornerRadius(16)
                 }
+                .sheet(item: $editingItemIndex) { editingIdx in
+                    let idx = editingIdx.id
+                    if contextIdx < contextManager.contexts.count,
+                       idx < contextManager.contexts[contextIdx].items.count {
+                        let item = contextManager.contexts[contextIdx].items[idx]
+                        switch item {
+                        case .application(let app):
+                            AddAppDialog(
+                                initialApp: app,
+                                onAdd: { newApp in
+                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .application(newApp))
+                                    contextManager.saveContexts()
+                                    editingItemIndex = nil
+                                },
+                                onCancel: { editingItemIndex = nil }
+                            )
+                            .presentationDetents([.height(480)])
+                            .presentationDragIndicator(.visible)
+                            .presentationCornerRadius(16)
+                        case .document(let doc):
+                            AddDocumentDialog(
+                                initialDocument: doc,
+                                onAdd: { newDoc in
+                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .document(newDoc))
+                                    contextManager.saveContexts()
+                                    editingItemIndex = nil
+                                },
+                                onCancel: { editingItemIndex = nil }
+                            )
+                            .presentationDetents([.height(480)])
+                            .presentationDragIndicator(.visible)
+                            .presentationCornerRadius(16)
+                        case .browserTab(let tab):
+                            AddBrowserTabDialog(
+                                initialTab: tab,
+                                onAdd: { newTab in
+                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .browserTab(newTab))
+                                    contextManager.saveContexts()
+                                    editingItemIndex = nil
+                                },
+                                onCancel: { editingItemIndex = nil }
+                            )
+                            .presentationDetents([.height(480)])
+                            .presentationDragIndicator(.visible)
+                            .presentationCornerRadius(16)
+                        case .terminalSession(let term):
+                            AddTerminalDialog(
+                                initialSession: term,
+                                onAdd: { newTerm in
+                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .terminalSession(newTerm))
+                                    contextManager.saveContexts()
+                                    editingItemIndex = nil
+                                },
+                                onCancel: { editingItemIndex = nil }
+                            )
+                            .presentationDetents([.height(480)])
+                            .presentationDragIndicator(.visible)
+                            .presentationCornerRadius(16)
+                        }
+                    }
+                }
             } else {
                 VStack {
                     Spacer()
@@ -273,6 +349,9 @@ struct ContextDetailsView: View {
             onOpen: onOpenAction(for: item, contextIdx: contextIdx),
             onDelete: {
                 contextManager.removeItem(at: itemIndex, from: contextManager.contexts[contextIdx].id)
+            },
+            onEdit: {
+                editingItemIndex = EditingIndex(id: itemIndex)
             }
         )
         .listRowInsets(EdgeInsets())
