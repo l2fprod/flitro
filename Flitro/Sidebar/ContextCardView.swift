@@ -39,35 +39,12 @@ struct ContextCardView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
-            // Icon
-            Group {
-                ZStack {
-                    if let backgroundColorHex = context.iconBackgroundColor, let backgroundColor = Color(hex: backgroundColorHex) {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(backgroundColor)
-                            .frame(width: 32, height: 32)
-                    } else {
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color(NSColor.windowBackgroundColor))
-                            .frame(width: 32, height: 32)
-                    }
-                    Group {
-                        if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
-                            icon.regular
-                                .font(.title2)
-                                .foregroundColor(foregroundColor)
-                        } else {
-                            Image(systemName: "folder")
-                                .font(.title2)
-                                .foregroundColor(foregroundColor)
-                        }
-                    }
-                    .rotationEffect(.degrees(iconRotation))
-                    .animation(.spring(response: 0.5, dampingFraction: 0.6), value: iconRotation)
-                }
-            }
-            .frame(width: 32, height: 32)
-
+            ContextIconView(
+                context: context,
+                size: 32,
+                animate: true,
+                rotation: iconRotation
+            )
             VStack(alignment: .leading, spacing: 2) {
                 Text(context.name)
                     .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
@@ -115,12 +92,8 @@ struct ContextCardView: View {
                 }
             )
         }
-        .onAppear {
-            iconRotation = isActive ? 360 : 0
-            cardScale = isActive ? 1.04 : 1.0
-        }
-        .onChange(of: isActive) { active, _ in
-            if active {
+        .onChange(of: isActive) { _, newValue in
+            if newValue {
                 iconRotation = 360
                 cardScale = 1.04
             } else {

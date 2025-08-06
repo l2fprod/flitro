@@ -1,6 +1,5 @@
 import Foundation
 import AppKit
-import ApplicationServices
 
 // MARK: - Data Models
 
@@ -143,6 +142,7 @@ class ContextManager: ObservableObject {
         contextsFileURL = appDirectory.appendingPathComponent("contexts.json")
         analyticsManager = AnalyticsManager(contextsFileURL: contextsFileURL)
         addListener(analyticsManager)
+        addListener(SpotlightIndexerListener(contextManager: self))
 
         loadContexts()
     }
@@ -379,6 +379,7 @@ class ContextManager: ObservableObject {
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             let data = try encoder.encode(contexts)
             try data.write(to: contextsFileURL)
+            listeners.forEach { $0.contextsSaved(contexts) }
         } catch {
             print("Failed to save contexts: \(error)")
         }
@@ -390,6 +391,7 @@ class ContextManager: ObservableObject {
             // Try decoding as new format
             let decoded = try JSONDecoder().decode([Context].self, from: data)
             self.contexts = decoded
+            listeners.forEach { $0.contextsLoaded(self.contexts) }
         } catch {
             print("No existing contexts.json found or failed to read: \(error)")
         }

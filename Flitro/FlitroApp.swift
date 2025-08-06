@@ -27,6 +27,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         NSApp.setActivationPolicy(.accessory)
         return false
     }
+
+    func application(_ application: NSApplication, continue userActivity: NSUserActivity, restorationHandler: @escaping ([NSUserActivityRestoring]) -> Void) -> Bool {
+        // Handle Core Spotlight context activation
+        if userActivity.activityType == "com.apple.corespotlightitem",
+           let contextIDString = userActivity.userInfo?["kCSSearchableItemActivityIdentifier"] as? String,
+           let contextID = UUID(uuidString: contextIDString) {
+            print("[AppDelegate] Toggling context from Core Spotlight: \(contextID)")
+            if ContextManager.shared.isActive(contextID: contextID) {
+                ContextManager.shared.closeContext(contextID: contextID)
+            } else {
+                ContextManager.shared.switchToContext(contextID: contextID)
+            }
+            showMainWindow()
+            return true
+        }
+        // Handle NSUserActivity context activation
+        if userActivity.activityType == "com.l2fprod.flitro.context",
+           let contextIDString = userActivity.userInfo?["contextID"] as? String,
+           let contextID = UUID(uuidString: contextIDString) {
+            print("[AppDelegate] Toggling context from NSUserActivity: \(contextID)")
+            if ContextManager.shared.isActive(contextID: contextID) {
+                ContextManager.shared.closeContext(contextID: contextID)
+            } else {
+                ContextManager.shared.switchToContext(contextID: contextID)
+            }
+            showMainWindow()
+            return true
+        }
+        return false
+    }
 }
 
 // MARK: - Main Content View
@@ -153,7 +183,13 @@ struct MenuBarExtraContents: View {
                 }
             } label: {
                 HStack {
-                    ContextIconView(context: context, size: 20)
+                    if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
+                        icon.regular
+                            .font(.system(size: 20))
+                    } else {
+                        Image(systemName: "folder")
+                            .font(.system(size: 20))
+                    }
                     Text(context.name)
                 }
             }
@@ -173,44 +209,5 @@ struct MenuBarExtraContents: View {
         }
         Divider()
         Button("Quit") { NSApp.terminate(nil) }
-    }
-}
-
-struct ContextIconView: View {
-    let context: Context
-    let size: CGFloat
-    
-    var body: some View {
-        ZStack {
-            if let iconBackgroundColor = context.iconBackgroundColor,
-               let backgroundColor = Color(hex: iconBackgroundColor) {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(backgroundColor)
-                    .frame(width: size, height: size)
-            } else {
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(NSColor.windowBackgroundColor))
-                    .frame(width: size, height: size)
-            }
-            
-            if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
-                icon.regular
-                    .font(.system(size: size * 0.6))
-                    .foregroundColor(iconForegroundColor)
-            } else {
-                Image(systemName: "folder")
-                    .font(.system(size: size * 0.6))
-                    .foregroundColor(.blue)
-            }
-        }
-        .frame(width: size, height: size)
-    }
-    
-    private var iconForegroundColor: Color {
-        if let iconForegroundColor = context.iconForegroundColor,
-           let color = Color(hex: iconForegroundColor) {
-            return color
-        }
-        return .primary
     }
 }

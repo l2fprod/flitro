@@ -1,11 +1,5 @@
 import Foundation
 
-protocol ContextManagerListener: AnyObject {
-    func contextDidOpen(contextID: UUID)
-    func contextDidClose(contextID: UUID)
-    func contextDidCreate(contextID: UUID)
-}
-
 struct AnalyticsEvent: Codable {
     let type: String // "open", "close", etc.
     let timestamp: Date
@@ -54,7 +48,13 @@ class AnalyticsManager: ContextManagerListener, ObservableObject {
         store.contextCreatedCount += 1
         saveAnalytics()
     }
-    
+
+    func contextsLoaded(_ contexts: [Context]) {
+    }
+
+    func contextsSaved(_ contexts: [Context]) {
+    }
+
     private func addEvent(type: String, contextID: UUID, contextData: inout ContextAnalytics) {
         let event = AnalyticsEvent(type: type, timestamp: Date())
         contextData.events.append(event)
