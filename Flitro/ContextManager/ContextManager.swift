@@ -476,3 +476,37 @@ extension Array {
         self.insert(contentsOf: elements, at: toOffset)
     }
 }
+
+extension ContextManager {
+    /// Reveals the target application, document, or directory in Finder for a given ContextItem.
+    public func revealInFinder(for item: ContextItem) {
+        switch item {
+        case .application(let app):
+            if let path = NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.bundleIdentifier)?.path {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
+            } else if let filePath = app.filePath {
+                NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: filePath)])
+            }
+        case .document(let doc):
+            NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: doc.filePath)])
+        case .browserTab:
+            break // Not applicable
+        case .terminalSession(let term):
+            NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: term.workingDirectory)
+        }
+    }
+
+    /// Returns true if the item supports reveal in Finder (app, document, terminal session)
+    public func canRevealInFinder(for item: ContextItem) -> Bool {
+        switch item {
+        case .application:
+            return true
+        case .document:
+            return true
+        case .terminalSession:
+            return true
+        case .browserTab:
+            return false
+        }
+    }
+}

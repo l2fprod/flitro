@@ -52,6 +52,12 @@ struct ContextItemRow: View {
                     Label("Edit", systemImage: "pencil")
                 }
             }
+            if contextManager.canRevealInFinder(for: item) {
+                Button(action: { contextManager.revealInFinder(for: item) }) {
+                    Label("Reveal in Finder", systemImage: "folder")
+                }
+            }
+            Divider()
             if let onDelete = onDelete {
                 Button(role: .destructive, action: onDelete) {
                     Label("Delete", systemImage: "trash")
