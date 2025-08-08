@@ -39,20 +39,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             } else {
                 ContextManager.shared.switchToContext(contextID: contextID)
             }
-            showMainWindow()
-            return true
-        }
-        // Handle NSUserActivity context activation
-        if userActivity.activityType == "com.l2fprod.flitro.context",
-           let contextIDString = userActivity.userInfo?["contextID"] as? String,
-           let contextID = UUID(uuidString: contextIDString) {
-            print("[AppDelegate] Toggling context from NSUserActivity: \(contextID)")
-            if ContextManager.shared.isActive(contextID: contextID) {
-                ContextManager.shared.closeContext(contextID: contextID)
-            } else {
-                ContextManager.shared.switchToContext(contextID: contextID)
-            }
-            showMainWindow()
             return true
         }
         return false
