@@ -5,7 +5,8 @@ import AppKit
 protocol ContextApplicationLauncher: AnyObject {
     var bundleIdentifier: String { get }
     var items: [ContextItem] { get set }
-    func open()
+    /// Opens the items. If singleItem is true, should open in the active window/tab if possible.
+    func open(singleItem: Bool)
     func close()
 }
 
@@ -19,7 +20,7 @@ class DefaultApplicationLauncher: ContextApplicationLauncher {
         self.items = items
     }
     
-    func open() {
+    func open(singleItem: Bool = false) {
         // Open the app
         let workspace = NSWorkspace.shared
         if let url = workspace.urlForApplication(withBundleIdentifier: bundleIdentifier) {

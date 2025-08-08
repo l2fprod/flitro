@@ -22,6 +22,11 @@ class PreviewApplicationLauncher: ContextApplicationLauncher {
         }
     }
     
+    func open(singleItem: Bool = false) {
+        // For now, treat singleItem same as before
+        open()
+    }
+    
     func close() {
         for fileToClose in openedFilePaths {
             let script = """

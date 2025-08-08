@@ -111,7 +111,7 @@ struct BrowserTab: Identifiable, Codable, Equatable, Hashable {
     var id: UUID = UUID()
     var title: String
     var url: String
-    var browser: String // Safari, Chrome, Firefox
+    var browser: String // Safari, Chrome
 }
 
 struct TerminalSession: Identifiable, Codable, Equatable, Hashable {
@@ -209,7 +209,6 @@ class ContextManager: ObservableObject {
             switch tab.browser.lowercased() {
             case "chrome": return "com.google.Chrome"
             case "safari": return "com.apple.Safari"
-            case "firefox": return "org.mozilla.firefox"
             case "default", "":
                 return getDefaultBrowserBundleId()
             default: return nil
@@ -226,8 +225,6 @@ class ContextManager: ObservableObject {
             return ChromeApplicationLauncher(items: items)
         case "com.apple.Safari":
             return SafariApplicationLauncher(items: items)
-        case "org.mozilla.firefox":
-            return FirefoxApplicationLauncher(items: items)
         case "com.apple.Preview":
             return PreviewApplicationLauncher(items: items)
         default:
@@ -287,7 +284,7 @@ class ContextManager: ObservableObject {
                 }
             }
 
-            launcher.open()
+            launcher.open(singleItem: false)
             launchers.append(launcher)
         }
 
@@ -420,7 +417,7 @@ extension ContextManager {
     func openItem(_ item: ContextItem) {
         if let bundleId = bundleId(for: item) {
             let launcher = launcher(for: bundleId, items: [item])
-            launcher.open()
+            launcher.open(singleItem: true)
         } else if case .terminalSession(let session) = item {
             // Implement if you want to support single terminal session open
             let commandToRun: String

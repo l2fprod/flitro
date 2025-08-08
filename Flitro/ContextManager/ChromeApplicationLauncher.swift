@@ -11,7 +11,7 @@ class ChromeApplicationLauncher: ContextApplicationLauncher {
         self.items = items
     }
     
-    func open() {
+    func open(singleItem: Bool = false) {
         // Collect all browser tabs
         let tabs = items.compactMap { item -> BrowserTab? in
             if case .browserTab(let tab) = item { return tab } else { return nil }
@@ -19,6 +19,24 @@ class ChromeApplicationLauncher: ContextApplicationLauncher {
         guard !tabs.isEmpty else { return }
         let urls = tabs.map { $0.url }.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
         guard !urls.isEmpty else { return }
+        if singleItem, let url = urls.first {
+            // Open in active window (no new window)
+            let script = """
+            tell application \"Google Chrome\"
+                activate
+                if (count of windows) = 0 then
+                    make new window
+                end if
+                tell front window to make new tab with properties {URL:\"\(url)\"}
+            end tell
+            """
+            if let appleScript = NSAppleScript(source: script) {
+                var error: NSDictionary? = nil
+                appleScript.executeAndReturnError(&error)
+            }
+            return
+        }
+        // Default: open all in new window
         let urlList = urls.map { "\"\($0)\"" }.joined(separator: ", ")
         let script = """
         tell application \"Google Chrome\"
