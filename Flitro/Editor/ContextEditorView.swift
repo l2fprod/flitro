@@ -303,10 +303,6 @@ extension View {
     }
 }
 
-extension UTType {
-    static var shellScript: UTType {
-        UTType(importedAs: "public.shell-script")
-    }
-}
+
 
 

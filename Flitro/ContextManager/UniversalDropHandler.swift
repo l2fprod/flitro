@@ -12,16 +12,10 @@ struct UniversalDropHandler {
         .data,
         .content,
         .item,
-        .json, // Add JSON support
-        .zip, // Add ZIP support
-        .archive, // Add general archive support
-        UTType(exportedAs: "public.url"),
-        UTType(exportedAs: "public.file-url"),
-        UTType(exportedAs: "public.shell-script"),
-        UTType(exportedAs: "public.utf8-plain-text"),
-        UTType(exportedAs: "public.zip-archive"), // Add ZIP archive support
-        UTType(exportedAs: "com.apple.disk-image-udif"), // Add disk image support (.dmg)
-        UTType(exportedAs: "com.apple.web-internet-location") // Added support for Safari/WEBloc
+        .json,
+        .zip,
+        .archive,
+        .shellScript,
     ]
     
     // MARK: - Drop Processing Types
@@ -79,12 +73,11 @@ struct UniversalDropHandler {
     // MARK: - File URL Drop Handler
     
     private static func handleFileURLDrop(provider: NSItemProvider, contextManager: ContextManager, contextIndex: Int) -> Bool {
-        guard provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) || provider.hasItemConformingToTypeIdentifier("public.file-url") else {
+        guard provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) else {
             return false
         }
         
-        let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) ? UTType.fileURL.identifier : "public.file-url"
-        provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
+        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, error in
             if let error = error {
                 print("Error loading file URL: \(error)")
                 return
@@ -103,12 +96,11 @@ struct UniversalDropHandler {
     // MARK: - ZIP Archive Drop Handler
     
     private static func handleZipArchiveDrop(provider: NSItemProvider, contextManager: ContextManager, contextIndex: Int) -> Bool {
-        guard provider.hasItemConformingToTypeIdentifier("public.zip-archive") || provider.hasItemConformingToTypeIdentifier(UTType.zip.identifier) else {
+        guard provider.hasItemConformingToTypeIdentifier(UTType.zip.identifier) else {
             return false
         }
         
-        let typeIdentifier = provider.hasItemConformingToTypeIdentifier("public.zip-archive") ? "public.zip-archive" : UTType.zip.identifier
-        provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
+        provider.loadItem(forTypeIdentifier: UTType.zip.identifier, options: nil) { item, error in
             if let error = error {
                 print("Error loading ZIP archive: \(error)")
                 return
@@ -135,6 +127,7 @@ struct UniversalDropHandler {
     // MARK: - Disk Image Drop Handler
     
     private static func handleDiskImageDrop(provider: NSItemProvider, contextManager: ContextManager, contextIndex: Int) -> Bool {
+        // Use the raw type identifier string since it's a specific macOS type
         guard provider.hasItemConformingToTypeIdentifier("com.apple.disk-image-udif") else {
             return false
         }
@@ -166,11 +159,11 @@ struct UniversalDropHandler {
     // MARK: - Shell Script Drop Handler
     
     private static func handleShellScriptDrop(provider: NSItemProvider, contextManager: ContextManager, contextIndex: Int) -> Bool {
-        guard provider.hasItemConformingToTypeIdentifier("public.shell-script") else {
+        guard provider.hasItemConformingToTypeIdentifier(UTType.shellScript.identifier) else {
             return false
         }
         
-        provider.loadItem(forTypeIdentifier: "public.shell-script", options: nil) { item, error in
+        provider.loadItem(forTypeIdentifier: UTType.shellScript.identifier, options: nil) { item, error in
             if let error = error {
                 print("Error loading shell script: \(error)")
                 return
@@ -194,12 +187,11 @@ struct UniversalDropHandler {
     // MARK: - URL Drop Handler
     
     private static func handleURLDrop(provider: NSItemProvider, contextManager: ContextManager, contextIndex: Int) -> Bool {
-        guard provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) || provider.hasItemConformingToTypeIdentifier("public.url") else {
+        guard provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) else {
             return false
         }
         
-        let typeIdentifier = provider.hasItemConformingToTypeIdentifier(UTType.url.identifier) ? UTType.url.identifier : "public.url"
-        provider.loadItem(forTypeIdentifier: typeIdentifier, options: nil) { item, error in
+        provider.loadItem(forTypeIdentifier: UTType.url.identifier, options: nil) { item, error in
             if let error = error {
                 print("Error loading URL: \(error)")
                 return
@@ -246,7 +238,7 @@ struct UniversalDropHandler {
     // MARK: - JSON Drop Handler
     
     private static func handleJSONDrop(provider: NSItemProvider, contextManager: ContextManager, contextIndex: Int) -> Bool {
-        guard provider.hasItemConformingToTypeIdentifier(UTType.json.identifier) || provider.hasItemConformingToTypeIdentifier("public.json") else {
+        guard provider.hasItemConformingToTypeIdentifier(UTType.json.identifier) else {
             return false
         }
         
