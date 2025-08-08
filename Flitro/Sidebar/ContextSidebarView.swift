@@ -58,7 +58,7 @@ struct ContextSidebarView: View {
             )
             .contentShape(Rectangle())
             .tag(context.id as UUID?)
-            .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
+            .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
                 UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: context.id)
             }
             Spacer(minLength: 0)

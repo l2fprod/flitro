@@ -157,7 +157,7 @@ struct ContextDetailsView: View {
                             .listStyle(.inset)
                             .background(Color.clear)
                             .clipShape(TopRoundedRectangle(radius: 16))
-                            .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
+                            .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
                                 UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: selectedContextID)
                             }
                         }

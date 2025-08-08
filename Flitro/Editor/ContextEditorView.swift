@@ -34,7 +34,7 @@ struct ContextEditorView: View {
                 showAddBrowserTabDialog: $showAddBrowserTabDialog,
                 showAddTerminalDialog: $showAddTerminalDialog
             )
-            .onDrop(of: [UTType.fileURL, UTType.url, UTType.text, UTType.plainText], isTargeted: nil) { providers in
+            .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
                 return UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: selectedContextID)
             }
         }
