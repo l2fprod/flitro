@@ -48,15 +48,15 @@ enum ContextItem: Codable, Equatable, Hashable {
     }
 }
 
-struct Context: Identifiable, Codable, Equatable, Hashable {
-    var id: UUID = UUID()
-    var name: String
-    private(set) var items: [ContextItem]
-    var iconName: String? = nil
-    var iconBackgroundColor: String? = nil // Optional hex color string
-    var iconForegroundColor: String? = nil // Optional hex color string
-    var createdAt: Date = Date()
-    var lastUsed: Date = Date()
+class Context: ObservableObject, Identifiable, Codable, Equatable, Hashable {
+    @Published var id: UUID = UUID()
+    @Published var name: String
+    @Published var items: [ContextItem]
+    @Published var iconName: String? = nil
+    @Published var iconBackgroundColor: String? = nil // Optional hex color string
+    @Published var iconForegroundColor: String? = nil // Optional hex color string
+    @Published var createdAt: Date = Date()
+    @Published var lastUsed: Date = Date()
     
     /// Changes when any property relevant to UI changes.
     var reactiveId: Int {
@@ -74,20 +74,57 @@ struct Context: Identifiable, Codable, Equatable, Hashable {
     static func == (lhs: Context, rhs: Context) -> Bool {
         lhs.id == rhs.id
     }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
 
-    // Mutating item methods
-    mutating func addItem(_ item: ContextItem) {
+    // Item methods
+    func addItem(_ item: ContextItem) {
         items.append(item)
     }
-    mutating func removeItem(at index: Int) {
+    func removeItem(at index: Int) {
         items.remove(at: index)
     }
-    mutating func moveItems(fromOffsets: IndexSet, toOffset: Int) {
+    func moveItems(fromOffsets: IndexSet, toOffset: Int) {
         items.move(fromOffsets: fromOffsets, toOffset: toOffset)
     }
-    mutating func updateItem(at index: Int, with newItem: ContextItem) {
+    func updateItem(at index: Int, with newItem: ContextItem) {
         guard items.indices.contains(index) else { return }
         items[index] = newItem
+    }
+
+    // Codable
+    enum CodingKeys: String, CodingKey {
+        case id, name, items, iconName, iconBackgroundColor, iconForegroundColor, createdAt, lastUsed
+    }
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        items = try container.decode([ContextItem].self, forKey: .items)
+        iconName = try container.decodeIfPresent(String.self, forKey: .iconName)
+        iconBackgroundColor = try container.decodeIfPresent(String.self, forKey: .iconBackgroundColor)
+        iconForegroundColor = try container.decodeIfPresent(String.self, forKey: .iconForegroundColor)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        lastUsed = try container.decode(Date.self, forKey: .lastUsed)
+    }
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(items, forKey: .items)
+        try container.encodeIfPresent(iconName, forKey: .iconName)
+        try container.encodeIfPresent(iconBackgroundColor, forKey: .iconBackgroundColor)
+        try container.encodeIfPresent(iconForegroundColor, forKey: .iconForegroundColor)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encode(lastUsed, forKey: .lastUsed)
+    }
+    // Convenience initializer
+    init(name: String, items: [ContextItem], iconName: String? = nil) {
+        self.name = name
+        self.items = items
+        self.iconName = iconName
     }
 }
 

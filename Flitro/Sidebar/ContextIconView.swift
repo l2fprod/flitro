@@ -3,7 +3,7 @@ import PhosphorSwift
 import Foundation
 
 struct ContextIconView: View {
-    let context: Context
+    @ObservedObject var context: Context
     let size: CGFloat
     let animate: Bool
     let rotation: Double

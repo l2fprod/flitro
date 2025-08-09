@@ -48,12 +48,10 @@ struct ContextSidebarView: View {
                 context: context,
                 isSelected: context.id == selectedContextID,
                 onIconChange: { iconName, backgroundColorHex, foregroundColorHex in
-                    if let index = contextManager.contexts.firstIndex(where: { $0.id == context.id }) {
-                        contextManager.contexts[index].iconName = iconName
-                        contextManager.contexts[index].iconBackgroundColor = backgroundColorHex
-                        contextManager.contexts[index].iconForegroundColor = foregroundColorHex
-                        contextManager.saveContexts()
-                    }
+                    context.iconName = iconName
+                    context.iconBackgroundColor = backgroundColorHex
+                    context.iconForegroundColor = foregroundColorHex
+                    contextManager.saveContexts()
                 }
             )
             .contentShape(Rectangle())
@@ -105,7 +103,7 @@ struct ContextSidebarView: View {
         VStack(spacing: 0) {
             headerView
              List(selection: $selectedContextID) {
-                 ForEach(contextManager.contexts) { context in
+                 ForEach(contextManager.contexts, id: \.id) { context in
                      contextRow(for: context)
                  }
                  .onMove { indices, newOffset in

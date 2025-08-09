@@ -17,14 +17,17 @@ applyTo: 'ContextManager.swift'
 - Never import custom UI components, views, or UI-related extensions/utilities.
 
 ## Data Models
-- All data models must be pure Swift structs, conforming to `Codable`, `Equatable`, and `Hashable`.
+- Data models may be Swift classes or structs, as appropriate for reactivity and architecture.
+- Data models must conform to `Codable`, `Equatable`, and `Hashable` where possible.
+- Data models may conform to `ObservableObject` and use `@Published` for properties that need to be observed by the UI.
 - Data models must be independent of any UI representation.
 - Data models must be serializable to JSON for persistence.
 - No references to UI types (e.g., `Color`, `Font`, view modifiers).
 
 ## ObservableObject Pattern
 - You may use `@Published` properties for reactive updates.
-- UI components should observe ContextManager, not the other way around.
+- Data models may conform to `ObservableObject` for fine-grained observation.
+- UI components should observe ContextManager and/or individual data models, not the other way around.
 - No direct UI state management within ContextManager.
 
 ## Application Management
@@ -46,7 +49,7 @@ applyTo: 'ContextManager.swift'
 ❌ DON'T:
 ```swift
 import SwiftUI  // Forbidden in ContextManager
-struct Context {
+class Context {
     var uiColor: Color  // UI-specific property
     var font: Font      // UI-specific property
 }
@@ -56,10 +59,11 @@ struct Context {
 ```swift
 import Foundation
 import AppKit
-struct Context {
-    var name: String
-    var applications: [AppItem]
+class Context: ObservableObject, Codable, Equatable, Hashable {
+    @Published var name: String
+    @Published var applications: [AppItem]
     // Pure data, no UI references
+    // ...
 }
 ```
 

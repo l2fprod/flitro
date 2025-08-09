@@ -5,7 +5,7 @@ import Foundation
 // MARK: - Context Card View
 
 struct ContextCardView: View {
-    let context: Context
+    @ObservedObject var context: Context
     let isSelected: Bool
     let onIconChange: (String?, String?, String?) -> Void
     
