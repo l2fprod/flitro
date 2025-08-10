@@ -50,7 +50,7 @@ jobs:
           git tag -d latest || true
           git push origin :refs/tags/latest || true
           # Create and push the new tag
-          git tag latest -m "$(cat build/Release/release-notes.html)"
+          git tag latest
           git push origin latest
   
       - name: Create Release
