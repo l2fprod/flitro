@@ -10,6 +10,7 @@ on:
       - 'FlitroUITests/**'
       - 'Flitro.xcodeproj/**'
       - '.github/workflows/build-and-notarize.sh'
+      - '.github/workflows/build-and-notarize.yml'
 
 jobs:
   build-and-notarize:
