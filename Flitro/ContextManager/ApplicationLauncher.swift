@@ -14,6 +14,7 @@ protocol ContextApplicationLauncher: AnyObject {
 class DefaultApplicationLauncher: ContextApplicationLauncher {
     let bundleIdentifier: String
     var items: [ContextItem]
+    private var didLaunchApp: Bool = false
     
     init(bundleIdentifier: String, items: [ContextItem] = []) {
         self.bundleIdentifier = bundleIdentifier
@@ -21,11 +22,13 @@ class DefaultApplicationLauncher: ContextApplicationLauncher {
     }
     
     func open(singleItem: Bool = false) {
-        // Open the app
         let workspace = NSWorkspace.shared
+        let wasRunning = workspace.runningApplications.contains { $0.bundleIdentifier == bundleIdentifier }
+        // Open the app
         if let url = workspace.urlForApplication(withBundleIdentifier: bundleIdentifier) {
             workspace.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
         }
+        didLaunchApp = !wasRunning
         // Open items (e.g., documents)
         for item in items {
             switch item {
@@ -37,16 +40,45 @@ class DefaultApplicationLauncher: ContextApplicationLauncher {
             }
         }
     }
-    
+
     func close() {
-        // Close the app (generic)
-        let runningApps = NSWorkspace.shared.runningApplications
-        for runningApp in runningApps {
-            if let bundleId = runningApp.bundleIdentifier, bundleId == bundleIdentifier {
-                let script = "tell application id \"\(bundleId)\" to quit"
-                if let appleScript = NSAppleScript(source: script) {
-                    var error: NSDictionary? = nil
-                    appleScript.executeAndReturnError(&error)
+        let workspace = NSWorkspace.shared
+        if didLaunchApp {
+            // Only close the app if we launched it
+            let runningApps = workspace.runningApplications
+            for runningApp in runningApps {
+                if let bundleId = runningApp.bundleIdentifier, bundleId == bundleIdentifier {
+                    let script = "tell application id \"\(bundleId)\" to quit"
+                    if let appleScript = NSAppleScript(source: script) {
+                        var error: NSDictionary? = nil
+                        appleScript.executeAndReturnError(&error)
+                    }
+                }
+            }
+        } else {
+            // App was already running: try to close only the related documents
+            for item in items {
+                switch item {
+                case .document(let doc):
+                    // Use external AppleScript if available
+                    let filePath = doc.filePath
+                    let scriptName = "generic-close.script"
+                    print("Looking for script: \(scriptName)")
+                    let scriptPath = Bundle.main.path(forResource: scriptName, ofType: nil)
+                    print("Using script at path: \(String(describing: scriptPath))")
+                    if let scriptPath = scriptPath, var scriptSource = try? String(contentsOfFile: scriptPath, encoding: .utf8) {
+                        // Replace placeholder with actual file path
+                        scriptSource = scriptSource
+                            .replacingOccurrences(of: "$FILEPATH", with: filePath)
+                            .replacingOccurrences(of: "$BUNDLE_IDENTIFIER", with: bundleIdentifier)
+                        print("script is \(scriptSource)")
+                        if let appleScript = NSAppleScript(source: scriptSource) {
+                            var error: NSDictionary? = nil
+                            appleScript.executeAndReturnError(&error)
+                        }
+                    }
+                default:
+                    break
                 }
             }
         }
