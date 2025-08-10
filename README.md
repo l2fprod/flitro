@@ -10,6 +10,7 @@ Flitro is a powerful macOS productivity app designed to help you seamlessly swit
 - **Flexible Switching Modes:** Choose between Replace All, or Additive modes to tailor how your workspace changes.
 - **Easy Context Management:** Create, edit, and delete named contexts to match your workflows.
 - **Menu Bar Access:** Quickly access and switch contexts from the macOS menu bar, without interrupting your flow.
+- **Spotlight Support:** Open and close contexts using Spotlight.
 - **Unified Window Experience:** The main window is always available from the menu bar or via keyboard shortcut, never duplicated, and hides when closed for a clutter-free desktop.
 - **Modern macOS Design:** Enjoy a beautiful, intuitive interface built with SwiftUI and AppKit, supporting unified toolbars and sidebars.
 
