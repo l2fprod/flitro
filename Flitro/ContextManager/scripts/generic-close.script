@@ -1,0 +1,38 @@
+set targetFile to "$FILEPATH"
+set targetBundleID to "$BUNDLE_IDENTIFIER"
+
+tell application id targetBundleID
+    try
+        repeat with d in documents
+            set docPath to ""
+            try
+                -- Try different property names apps might use
+                try
+                    set docPath to POSIX path of (file of d as alias)
+                end try
+                if docPath is "" then
+                    try
+                        set docPath to POSIX path of (path of d as alias)
+                    end try
+                end if
+                if docPath is "" then
+                    try
+                        set docPath to name of d
+                    end try
+                end if
+            end try
+
+            -- Compare by full POSIX path if possible
+            if docPath = targetFile then
+                close d saving no
+                exit repeat
+            else if docPath ≠ "" and docPath = (name of (POSIX file targetFile)) then
+                -- Fallback to name match if path match fails
+                close d saving no
+                exit repeat
+            end if
+        end repeat
+    on error errMsg
+        display dialog "Error in app (" & targetBundleID & "): " & errMsg
+    end try
+end tell
