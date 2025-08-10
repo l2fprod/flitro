@@ -17,7 +17,7 @@ since_date=$(date -u -j -f "%Y-%m-%dT%H:%M:%S%z" "${tag_date//Z/+0000}" +"%Y-%m-
 REPO="l2fprod/flitro"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
 
-echo "<h2>🚀 Closed issues</h2>"
+echo "<b>🚀 Closed issues</b>"
 echo "<ul>"
 page=1
 while :; do
@@ -40,7 +40,7 @@ while :; do
   fi
   echo "$issues" | jq -r --arg repo "$REPO" '
     .items[] |
-    "<li>\(.title) (https://github.com/\($repo)/issues/\(.number))</li>"
+    "<li>\(.title) <a href=\"https://github.com/\($repo)/issues/\(.number)\">#\(.number)</a></li>"
   '
   total_count=$(echo "$issues" | jq '.total_count' 2>/dev/null || echo 0)
   shown=$((page * 100))
@@ -50,10 +50,9 @@ while :; do
   page=$((page+1))
 done
 echo "</ul>"
-
-echo "
-<h2>💻 Commits</h2>"
+echo "<br/>"
+echo "<b>💻 Commits</b>"
 echo "<ul>"
-git --no-pager log $tag_commit..main --pretty=format:'<li>%s (https://github.com/'$REPO'/commit/%h)</li>' --no-merges
+git --no-pager log $tag_commit..main --pretty=format:'<li>%s <a href="https://github.com/'$REPO'/commit/%h">#%h</a></li>' --no-merges
 echo "
 </ul>"
