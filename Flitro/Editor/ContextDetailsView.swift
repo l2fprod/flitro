@@ -441,9 +441,9 @@ struct ContextButton: View {
             contextManager.closeContext(contextID: context.id)
         } else if isOptionPressed {
             contextManager.closeAllContexts()
-            contextManager.switchToContext(contextID: context.id)
+            contextManager.openContext(contextID: context.id)
         } else {
-            contextManager.switchToContext(contextID: context.id)
+            contextManager.openContext(contextID: context.id)
         }
     }
 }

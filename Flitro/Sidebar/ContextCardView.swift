@@ -67,7 +67,7 @@ struct ContextCardView: View {
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: cardScale)
         .contextMenu {
             Button("Open") {
-                contextManager.switchToContext(contextID: context.id)
+                contextManager.openContext(contextID: context.id)
             }
             .disabled(contextManager.isActive(contextID: context.id))
             Button("Close") {

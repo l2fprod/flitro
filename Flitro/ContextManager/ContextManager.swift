@@ -203,15 +203,6 @@ class ContextManager: ObservableObject {
         saveContexts()
     }
     
-    // MARK: - Context Switching
-    
-    func switchToContext(contextID: UUID) {
-        guard let latestContext = contexts.first(where: { $0.id == contextID }) else { return }
-        activeContexts.append(latestContext)
-        openContext(contextID: contextID)
-        saveContexts()
-    }
-
     /// Helper to get the bundle identifier of the system default browser
     private func getDefaultBrowserBundleId() -> String? {
         let workspace = NSWorkspace.shared
@@ -279,10 +270,13 @@ class ContextManager: ObservableObject {
         listeners.removeAll { $0 === listener }
     }
 
+    // MARK: - Open Context
+
     /// Open all items in the context, batching by app/bundle where possible, using launchers
-    private func openContext(contextID: UUID) {
+    func openContext(contextID: UUID) {
         guard let contextToOpen = contexts.first(where: { $0.id == contextID }) else { return }
         print("🚀 Opening context '\(contextToOpen.name)' with \(contextToOpen.items.count) items")
+        activeContexts.append(contextToOpen)
 
         var itemsByBundle: [String: [ContextItem]] = [:]
         for item in contextToOpen.items {

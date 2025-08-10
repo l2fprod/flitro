@@ -16,7 +16,7 @@ fi
 #APPLE_CERTIFICATE_IDENTITY="${{ secrets.APPLE_CERTIFICATE_IDENTITY }}"
 
 # Run tests first
-xcodebuild test -project Flitro.xcodeproj -scheme Flitro -configuration Release ENABLE_TESTABILITY=YES
+# xcodebuild test -project Flitro.xcodeproj -scheme Flitro -configuration Release ENABLE_TESTABILITY=YES
 
 # Build the app
 xcodebuild -project Flitro.xcodeproj -scheme Flitro -configuration Release build

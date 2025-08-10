@@ -37,7 +37,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
             if ContextManager.shared.isActive(contextID: contextID) {
                 ContextManager.shared.closeContext(contextID: contextID)
             } else {
-                ContextManager.shared.switchToContext(contextID: contextID)
+                ContextManager.shared.openContext(contextID: contextID)
             }
             return true
         }
@@ -161,7 +161,7 @@ struct MenuBarExtraContents: View {
         ForEach(contextManager.contexts, id: \.reactiveId) { context in
             Menu {
                 Button("Open") {
-                    contextManager.switchToContext(contextID: context.id)
+                    contextManager.openContext(contextID: context.id)
                 }
                 Divider()
                 Button("Close") {
