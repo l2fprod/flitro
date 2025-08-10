@@ -39,6 +39,7 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_CERTIFICATE_IDENTITY: ${{ secrets.APPLE_CERTIFICATE_IDENTITY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create/Update latest tag
         run: |
@@ -48,7 +49,7 @@ jobs:
           git tag -d latest || true
           git push origin :refs/tags/latest || true
           # Create and push the new tag
-          git tag latest
+          git tag latest -m "$(cat build/Release/release-notes.txt)"
           git push origin latest
   
       - name: Create Release
@@ -56,6 +57,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: latest
+          draft: false
+          make_latest: true
+          name: "Flitro (latest)"
+          body_path: build/Release/release-notes.txt
           files: |
             build/Release/Flitro.zip
             build/Release/appcast.xml

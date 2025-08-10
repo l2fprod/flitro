@@ -77,6 +77,9 @@ ZIP_SIZE=$(stat -f%z "$ZIP_PATH")
 ZIP_SHA256=$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')
 APPCAST_PATH="build/Release/appcast.xml"
 
+# Write release notes to a file
+/bin/bash .github/workflows/generate-release-notes.sh > build/Release/release-notes.txt
+
 cat > "$APPCAST_PATH" <<EOF
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0"
@@ -89,7 +92,9 @@ cat > "$APPCAST_PATH" <<EOF
     <language>en</language>
     <item>
       <title>Version $BASE_VERSION (build $BUILD_NUMBER)</title>
-      <description>Latest release of Flitro.</description>
+      <description><![CDATA[
+$(cat build/Release/release-notes.txt)
+]]></description>
       <sparkle:version>$BUILD_NUMBER</sparkle:version>
       <sparkle:shortVersionString>$BASE_VERSION</sparkle:shortVersionString>
       <pubDate>$(date -u "+%a, %d %b %Y %H:%M:%S GMT")</pubDate>
