@@ -50,11 +50,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 struct ContentView: View {
     @StateObject private var contextManager = ContextManager.shared
     @State private var selectedContextID: UUID? = nil
-    
-    var selectedContext: Context? {
-        contextManager.contexts.first(where: { $0.id == selectedContextID })
-    }
-    
+
     var body: some View {
         ContextEditorView(
             contextManager: contextManager,

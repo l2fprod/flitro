@@ -13,21 +13,7 @@ struct ContextCardView: View {
     @State private var iconRotation: Double = 0
     @State private var cardScale: CGFloat = 1.0
     @EnvironmentObject private var contextManager: ContextManager
-    
-    private var iconColor: Color {
-        let colors: [Color] = [.blue, .green, .purple, .orange, .pink, .teal]
-        let idx = abs(context.name.hashValue) % colors.count
-        return colors[idx]
-    }
-    
-    private var foregroundColor: Color {
-        if let foregroundHex = context.iconForegroundColor, let color = Color(hex: foregroundHex) {
-            return color
-        } else {
-            return iconColor
-        }
-    }
-    
+
     private var itemCountText: String {
         let total = context.items.count
         return "\(total) items"

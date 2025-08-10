@@ -120,11 +120,9 @@ struct ContextDetailsView: View {
     
     @State private var isEditingTitle = false
     @State private var draftTitle = ""
-    @State private var showAddMenu = false
     
     // New: Editing state for context items
     @State private var editingItemIndex: EditingIndex? = nil
-    @State private var editingItemType: ContextItem? = nil
     
     var body: some View {
         ZStack {
@@ -344,10 +342,6 @@ struct ContextDetailsView: View {
         )
         .listRowInsets(EdgeInsets())
         .background(Color.clear)
-    }
-
-    private var selectedContextName: String {
-        return context.name
     }
 }
 

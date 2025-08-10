@@ -169,7 +169,7 @@ class ContextManager: ObservableObject {
     private var contextLaunchers: [UUID: [ContextApplicationLauncher]] = [:]
     private var contextsFileURL: URL
 
-    public private(set) var analyticsManager: AnalyticsManager
+    private(set) var analyticsManager: AnalyticsManager
 
     private init() {
         let appName = Bundle.main.bundleIdentifier ?? "Flitro"
@@ -430,7 +430,7 @@ class ContextManager: ObservableObject {
     }
 
     /// Returns the best icon for a given ContextItem (app, document, browser tab, etc.)
-    public func icon(for item: ContextItem) -> NSImage? {
+    func icon(for item: ContextItem) -> NSImage? {
         let ws = NSWorkspace.shared
         if let bundleId = bundleId(for: item),
            let url = ws.urlForApplication(withBundleIdentifier: bundleId) {
