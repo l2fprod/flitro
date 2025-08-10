@@ -111,8 +111,8 @@ private struct EditingIndex: Identifiable, Equatable {
 }
 
 struct ContextDetailsView: View {
+    @ObservedObject var context: Context
     @ObservedObject var contextManager: ContextManager
-    @Binding var selectedContextID: UUID?
     @Binding var showAddAppDialog: Bool
     @Binding var showAddDocumentDialog: Bool
     @Binding var showAddBrowserTabDialog: Bool
@@ -128,188 +128,173 @@ struct ContextDetailsView: View {
     
     var body: some View {
         ZStack {
-            if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
-                let context = contextManager.contexts[contextIdx]
-                VStack(spacing: 0) {
-                    ZStack {
-                        TopRoundedRectangle(radius: 16)
-                            .fill(Color(.controlBackgroundColor))
-                            .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 2)
-                        if context.items.isEmpty {
-                            VStack {
-                                Spacer()
-                                Text("Use the + button above or drag and drop apps, documents, or files here to add them to this context.")
-                                    .font(.title3)
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 24)
-                                Spacer()
+            VStack(spacing: 0) {
+                ZStack {
+                    TopRoundedRectangle(radius: 16)
+                        .fill(Color(.controlBackgroundColor))
+                        .shadow(color: Color.black.opacity(0.07), radius: 8, x: 0, y: 2)
+                    if context.items.isEmpty {
+                        VStack {
+                            Spacer()
+                            Text("Use the + button above or drag and drop apps, documents, or files here to add them to this context.")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 24)
+                            Spacer()
+                        }
+                    } else {
+                        List {
+                            ForEach(context.items.indices, id: \.self) { idx in
+                                makeRow(for: context.items[idx], contextIdx: idx, itemIndex: idx)
                             }
-                        } else {
-                            List {
-                                ForEach(context.items.indices, id: \.self) { idx in
-                                    makeRow(for: context.items[idx], contextIdx: contextIdx, itemIndex: idx)
-                                }
-                                .onMove { indices, newOffset in
-                                    contextManager.moveItems(fromOffsets: indices, toOffset: newOffset, in: contextManager.contexts[contextIdx].id)
-                                }
-                            }
-                            .listStyle(.inset)
-                            .background(Color.clear)
-                            .clipShape(TopRoundedRectangle(radius: 16))
-                            .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
-                                UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: selectedContextID)
+                            .onMove { indices, newOffset in
+                                contextManager.moveItems(fromOffsets: indices, toOffset: newOffset, in: context.id)
                             }
                         }
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.top, 24)
-                }
-                .sheet(isPresented: $showAddAppDialog) {
-                    AddAppDialog(
-                        onAdd: { newApp in
-                            contextManager.addItem(.application(newApp), to: contextManager.contexts[contextIdx].id)
-                            showAddAppDialog = false
-                        },
-                        onCancel: { showAddAppDialog = false }
-                    )
-                    .presentationDetents([.height(480)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(16)
-                }
-                .sheet(isPresented: $showAddDocumentDialog) {
-                    AddDocumentDialog(
-                        onAdd: { newDoc in
-                            contextManager.addItem(.document(newDoc), to: contextManager.contexts[contextIdx].id)
-                            showAddDocumentDialog = false
-                        },
-                        onCancel: { showAddDocumentDialog = false }
-                    )
-                    .presentationDetents([.height(480)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(16)
-                }
-                .sheet(isPresented: $showAddBrowserTabDialog) {
-                    AddBrowserTabDialog(
-                        onAdd: { newTab in
-                            contextManager.addItem(.browserTab(newTab), to: contextManager.contexts[contextIdx].id)
-                            showAddBrowserTabDialog = false
-                        },
-                        onCancel: { showAddBrowserTabDialog = false }
-                    )
-                    .presentationDetents([.height(480)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(16)
-                }
-                .sheet(isPresented: $showAddTerminalDialog) {
-                    AddTerminalDialog(
-                        onAdd: { newTerm in
-                            contextManager.addItem(.terminalSession(newTerm), to: contextManager.contexts[contextIdx].id)
-                            showAddTerminalDialog = false
-                        },
-                        onCancel: { showAddTerminalDialog = false }
-                    )
-                    .presentationDetents([.height(480)])
-                    .presentationDragIndicator(.visible)
-                    .presentationCornerRadius(16)
-                }
-                .sheet(item: $editingItemIndex) { editingIdx in
-                    let idx = editingIdx.id
-                    if contextIdx < contextManager.contexts.count,
-                       idx < contextManager.contexts[contextIdx].items.count {
-                        let item = contextManager.contexts[contextIdx].items[idx]
-                        switch item {
-                        case .application(let app):
-                            AddAppDialog(
-                                initialApp: app,
-                                onAdd: { newApp in
-                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .application(newApp))
-                                    contextManager.saveContexts()
-                                    editingItemIndex = nil
-                                },
-                                onCancel: { editingItemIndex = nil }
-                            )
-                            .presentationDetents([.height(480)])
-                            .presentationDragIndicator(.visible)
-                            .presentationCornerRadius(16)
-                        case .document(let doc):
-                            AddDocumentDialog(
-                                initialDocument: doc,
-                                onAdd: { newDoc in
-                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .document(newDoc))
-                                    contextManager.saveContexts()
-                                    editingItemIndex = nil
-                                },
-                                onCancel: { editingItemIndex = nil }
-                            )
-                            .presentationDetents([.height(480)])
-                            .presentationDragIndicator(.visible)
-                            .presentationCornerRadius(16)
-                        case .browserTab(let tab):
-                            AddBrowserTabDialog(
-                                initialTab: tab,
-                                onAdd: { newTab in
-                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .browserTab(newTab))
-                                    contextManager.saveContexts()
-                                    editingItemIndex = nil
-                                },
-                                onCancel: { editingItemIndex = nil }
-                            )
-                            .presentationDetents([.height(480)])
-                            .presentationDragIndicator(.visible)
-                            .presentationCornerRadius(16)
-                        case .terminalSession(let term):
-                            AddTerminalDialog(
-                                initialSession: term,
-                                onAdd: { newTerm in
-                                    contextManager.contexts[contextIdx].updateItem(at: idx, with: .terminalSession(newTerm))
-                                    contextManager.saveContexts()
-                                    editingItemIndex = nil
-                                },
-                                onCancel: { editingItemIndex = nil }
-                            )
-                            .presentationDetents([.height(480)])
-                            .presentationDragIndicator(.visible)
-                            .presentationCornerRadius(16)
+                        .listStyle(.inset)
+                        .background(Color.clear)
+                        .clipShape(TopRoundedRectangle(radius: 16))
+                        .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
+                            UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: context.id)
                         }
                     }
                 }
-            } else {
-                VStack {
-                    Spacer()
-                    Text("Select or add a context to view details.")
-                        .foregroundColor(.secondary)
-                    Spacer()
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+            }
+            .sheet(isPresented: $showAddAppDialog) {
+                AddAppDialog(
+                    onAdd: { newApp in
+                        contextManager.addItem(.application(newApp), to: context.id)
+                        showAddAppDialog = false
+                    },
+                    onCancel: { showAddAppDialog = false }
+                )
+                .presentationDetents([.height(480)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(16)
+            }
+            .sheet(isPresented: $showAddDocumentDialog) {
+                AddDocumentDialog(
+                    onAdd: { newDoc in
+                        contextManager.addItem(.document(newDoc), to: context.id)
+                        showAddDocumentDialog = false
+                    },
+                    onCancel: { showAddDocumentDialog = false }
+                )
+                .presentationDetents([.height(480)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(16)
+            }
+            .sheet(isPresented: $showAddBrowserTabDialog) {
+                AddBrowserTabDialog(
+                    onAdd: { newTab in
+                        contextManager.addItem(.browserTab(newTab), to: context.id)
+                        showAddBrowserTabDialog = false
+                    },
+                    onCancel: { showAddBrowserTabDialog = false }
+                )
+                .presentationDetents([.height(480)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(16)
+            }
+            .sheet(isPresented: $showAddTerminalDialog) {
+                AddTerminalDialog(
+                    onAdd: { newTerm in
+                        contextManager.addItem(.terminalSession(newTerm), to: context.id)
+                        showAddTerminalDialog = false
+                    },
+                    onCancel: { showAddTerminalDialog = false }
+                )
+                .presentationDetents([.height(480)])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(16)
+            }
+            .sheet(item: $editingItemIndex) { editingIdx in
+                let idx = editingIdx.id
+                if idx < context.items.count {
+                    let item = context.items[idx]
+                    switch item {
+                    case .application(let app):
+                        AddAppDialog(
+                            initialApp: app,
+                            onAdd: { newApp in
+                                context.updateItem(at: idx, with: .application(newApp))
+                                contextManager.saveContexts()
+                                editingItemIndex = nil
+                            },
+                            onCancel: { editingItemIndex = nil }
+                        )
+                        .presentationDetents([.height(480)])
+                        .presentationDragIndicator(.visible)
+                        .presentationCornerRadius(16)
+                    case .document(let doc):
+                        AddDocumentDialog(
+                            initialDocument: doc,
+                            onAdd: { newDoc in
+                                context.updateItem(at: idx, with: .document(newDoc))
+                                contextManager.saveContexts()
+                                editingItemIndex = nil
+                            },
+                            onCancel: { editingItemIndex = nil }
+                        )
+                        .presentationDetents([.height(480)])
+                        .presentationDragIndicator(.visible)
+                        .presentationCornerRadius(16)
+                    case .browserTab(let tab):
+                        AddBrowserTabDialog(
+                            initialTab: tab,
+                            onAdd: { newTab in
+                                context.updateItem(at: idx, with: .browserTab(newTab))
+                                contextManager.saveContexts()
+                                editingItemIndex = nil
+                            },
+                            onCancel: { editingItemIndex = nil }
+                        )
+                        .presentationDetents([.height(480)])
+                        .presentationDragIndicator(.visible)
+                        .presentationCornerRadius(16)
+                    case .terminalSession(let term):
+                        AddTerminalDialog(
+                            initialSession: term,
+                            onAdd: { newTerm in
+                                context.updateItem(at: idx, with: .terminalSession(newTerm))
+                                contextManager.saveContexts()
+                                editingItemIndex = nil
+                            },
+                            onCancel: { editingItemIndex = nil }
+                        )
+                        .presentationDetents([.height(480)])
+                        .presentationDragIndicator(.visible)
+                        .presentationCornerRadius(16)
+                    }
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .toolbar {
             ToolbarItem(placement: .navigation) {
-                if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
-                    let context = contextManager.contexts[contextIdx]
-                    if isEditingTitle {
-                        TextField("Context Name", text: $draftTitle, onCommit: {
-                            isEditingTitle = false
-                            let trimmed = draftTitle.trimmingCharacters(in: .whitespaces)
-                            if !trimmed.isEmpty && trimmed != context.name {
-                                contextManager.contexts[contextIdx].name = trimmed
-                                contextManager.saveContexts()
-                            }
-                        })
+                if isEditingTitle {
+                    TextField("Context Name", text: $draftTitle, onCommit: {
+                        isEditingTitle = false
+                        let trimmed = draftTitle.trimmingCharacters(in: .whitespaces)
+                        if !trimmed.isEmpty && trimmed != context.name {
+                            context.name = trimmed
+                            contextManager.saveContexts()
+                        }
+                    })
+                    .font(.system(size: 17, weight: .bold))
+                    .textFieldStyle(PlainTextFieldStyle())
+                    .frame(minWidth: 120, maxWidth: 300)
+                    .onAppear { draftTitle = context.name }
+                    .onExitCommand { isEditingTitle = false }
+                } else {
+                    Text(context.name)
                         .font(.system(size: 17, weight: .bold))
-                        .textFieldStyle(PlainTextFieldStyle())
-                        .frame(minWidth: 120, maxWidth: 300)
-                        .onAppear { draftTitle = context.name }
-                        .onExitCommand { isEditingTitle = false }
-                    } else {
-                        Text(context.name)
-                            .font(.system(size: 17, weight: .bold))
-                            .onTapGesture {
-                                draftTitle = context.name
-                                isEditingTitle = true
-                            }
-                    }
+                        .onTapGesture {
+                            draftTitle = context.name
+                            isEditingTitle = true
+                        }
                 }
             }
             ToolbarItemGroup(placement: .automatic) {
@@ -332,14 +317,11 @@ struct ContextDetailsView: View {
                     .foregroundColor(Color.gray.opacity(0.3))
                     .padding(.horizontal, 4)
                 // Single context button
-                if let contextIdx = contextManager.contexts.firstIndex(where: { $0.id == selectedContextID }) {
-                    let context = contextManager.contexts[contextIdx]
-                    ContextButton(context: context, contextManager: contextManager)
-                }
+                ContextButton(context: context, contextManager: contextManager)
             }
         }
         .navigationTitle("")
-        .onChange(of: selectedContextID) { _, _ in
+        .onChange(of: context.id) { _, _ in
             isEditingTitle = false
         }
     }
@@ -354,7 +336,7 @@ struct ContextDetailsView: View {
             contextManager: contextManager,
             onOpen: onOpenAction(for: item, contextIdx: contextIdx),
             onDelete: {
-                contextManager.removeItem(at: itemIndex, from: contextManager.contexts[contextIdx].id)
+                contextManager.removeItem(at: itemIndex, from: context.id)
             },
             onEdit: {
                 editingItemIndex = EditingIndex(id: itemIndex)
@@ -365,10 +347,7 @@ struct ContextDetailsView: View {
     }
 
     private var selectedContextName: String {
-        if let id = selectedContextID, let context = contextManager.contexts.first(where: { $0.id == id }) {
-            return context.name
-        }
-        return "Context"
+        return context.name
     }
 }
 

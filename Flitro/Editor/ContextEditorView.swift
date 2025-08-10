@@ -26,16 +26,20 @@ struct ContextEditorView: View {
             )
             .environmentObject(contextManager)
         } detail: {
-            ContextDetailsView(
-                contextManager: contextManager,
-                selectedContextID: $selectedContextID,
-                showAddAppDialog: $showAddAppDialog,
-                showAddDocumentDialog: $showAddDocumentDialog,
-                showAddBrowserTabDialog: $showAddBrowserTabDialog,
-                showAddTerminalDialog: $showAddTerminalDialog
-            )
-            .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
+            if let selectedContext = selectedContext {
+                ContextDetailsView(
+                    context: selectedContext,
+                    contextManager: contextManager,
+                    showAddAppDialog: $showAddAppDialog,
+                    showAddDocumentDialog: $showAddDocumentDialog,
+                    showAddBrowserTabDialog: $showAddBrowserTabDialog,
+                    showAddTerminalDialog: $showAddTerminalDialog
+                ).onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
                 return UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: selectedContextID)
+                }
+            } else {
+                Text("Select or add a context to view details.")
+                    .foregroundColor(.secondary)
             }
         }
         .frame(minWidth: 900, minHeight: 600)
