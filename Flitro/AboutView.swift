@@ -2,7 +2,6 @@ import SwiftUI
 
 struct AboutView: View {
     @State private var logoGlow: Bool = false
-    @State private var shimmerPhase: CGFloat = 0.0
     var body: some View {
         ZStack {
             // Logo-matching gradient background with sparkles
@@ -62,6 +61,7 @@ struct AboutView: View {
                             .clipShape(Capsule())
                             .shadow(color: Color.purple.opacity(0.18), radius: 4, x: 0, y: 2)
                     }
+                    .focusable(false)
                     Link(destination: URL(string: "https://github.com/l2fprod/flitro")!) {
                         Label("GitHub", systemImage: "chevron.left.slash.chevron.right")
                             .font(.title3.bold())
@@ -72,6 +72,7 @@ struct AboutView: View {
                             .clipShape(Capsule())
                             .shadow(color: Color.pink.opacity(0.18), radius: 4, x: 0, y: 2)
                     }
+                    .focusable(false)
                 }
                 // AI Badge Card with shimmer (no card)
                 Image("AboutMadeWithAI")
