@@ -30,6 +30,7 @@ jobs:
           xcode-version: 'latest-stable'
 
       - name: Build and Notarize
+        id: build_and_notarize
         run: |
           ./.github/workflows/build-and-notarize.sh
         env:
@@ -59,10 +60,13 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
+          name: Flitro ${{ steps.build_and_notarize.outputs.version }} (build ${{ steps.build_and_notarize.outputs.build_number }})
           body_path: build/Release/release-notes.html
+          draft: false
+          prerelease: false
           files: |
             build/Release/Flitro.zip
             build/Release/appcast.xml
           generate_release_notes: true
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

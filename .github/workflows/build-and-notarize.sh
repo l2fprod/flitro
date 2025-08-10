@@ -107,3 +107,10 @@ $(cat build/Release/release-notes.html)
   </channel>
 </rss>
 EOF
+
+# If running in GitHub Actions, set the version output
+echo "GITHUB_OUTPUT is $GITHUB_OUTPUT"
+if [ -n "$GITHUB_OUTPUT" ]; then
+  echo "version=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+  echo "build_number=$BUILD_NUMBER" >> "$GITHUB_OUTPUT"
+fi
