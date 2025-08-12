@@ -42,7 +42,7 @@ struct ContextEditorView: View {
                     .foregroundColor(.secondary)
             }
         }
-        .frame(minWidth: 900, minHeight: 600)
+        .frame(minWidth: 800, minHeight: 500)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

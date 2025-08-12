@@ -283,7 +283,7 @@ struct ContextDetailsView: View {
                     })
                     .font(.system(size: 17, weight: .bold))
                     .textFieldStyle(PlainTextFieldStyle())
-                    .frame(minWidth: 120, maxWidth: 300)
+                    .frame(minWidth: 120, maxWidth: 200)
                     .onAppear { draftTitle = context.name }
                     .onExitCommand { isEditingTitle = false }
                 } else {
