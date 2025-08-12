@@ -21,19 +21,18 @@ class DefaultApplicationLauncher: ContextApplicationLauncher {
     }
     
     func open(singleItem: Bool = false) {
-        // Open the app
         let workspace = NSWorkspace.shared
-        if let url = workspace.urlForApplication(withBundleIdentifier: bundleIdentifier) {
-            workspace.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
-        }
-        // Open items (e.g., documents)
-        for item in items {
-            switch item {
-            case .document(let doc):
-                let fileURL = URL(fileURLWithPath: doc.filePath)
-                workspace.open(fileURL)
-            default:
-                break
+        if let appURL = workspace.urlForApplication(withBundleIdentifier: bundleIdentifier) {
+            workspace.openApplication(at: appURL, configuration: NSWorkspace.OpenConfiguration())
+            // Open items (e.g., documents) with the specified app
+            for item in items {
+                switch item {
+                case .document(let doc):
+                    let fileURL = URL(fileURLWithPath: doc.filePath)
+                    workspace.open([fileURL], withApplicationAt: appURL, configuration: NSWorkspace.OpenConfiguration(), completionHandler: nil)
+                default:
+                    break
+                }
             }
         }
     }

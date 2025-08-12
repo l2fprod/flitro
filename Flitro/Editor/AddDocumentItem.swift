@@ -1,12 +1,13 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 class AddDocumentDialogViewModel: ObservableObject {
-    enum Tab { case browse, opened }
-    @Published var selectedTab: Tab = .browse
     @Published var docName: String = ""
     @Published var docPath: String = ""
     @Published var docApp: String = ""
+    @Published var docAppName: String = ""
     @Published var showOpenPanel = false
+    @Published var showAppOpenPanel = false
     @Published var bookmark: Data? = nil
     
     init(initialDocument: DocumentItem? = nil) {
@@ -14,6 +15,13 @@ class AddDocumentDialogViewModel: ObservableObject {
             self.docName = doc.name
             self.docPath = doc.filePath
             self.docApp = doc.application
+            if !doc.application.isEmpty,
+               let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: doc.application),
+               let bundle = Bundle(url: appURL) {
+                self.docAppName = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? appURL.deletingPathExtension().lastPathComponent
+            } else {
+                self.docAppName = ""
+            }
             self.bookmark = doc.bookmark
         }
     }
@@ -33,33 +41,7 @@ struct AddDocumentDialogContent: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Tab selector with improved styling
-            Picker(selection: $viewModel.selectedTab) {
-                Text("Browse").tag(AddDocumentDialogViewModel.Tab.browse)
-                Text("Opened").tag(AddDocumentDialogViewModel.Tab.opened)
-            } label: {
-                EmptyView()
-            }
-            .pickerStyle(.segmented)
-            .padding(.bottom, 24)
-            
-            // Content based on selected tab
-            Group {
-                if viewModel.selectedTab == .browse {
-                    browseTabContent
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                } else if viewModel.selectedTab == .opened {
-                    openedTabContent
-                        .transition(.asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .leading).combined(with: .opacity)
-                        ))
-                }
-            }
-            .animation(.easeInOut(duration: 0.3), value: viewModel.selectedTab)
+            browseTabContent
         }
         .onChange(of: viewModel.showOpenPanel) { oldValue, newValue in
             if newValue {
@@ -77,6 +59,24 @@ struct AddDocumentDialogContent: View {
                     }
                 }
                 viewModel.showOpenPanel = false
+            }
+        }
+        .onChange(of: viewModel.showAppOpenPanel) { oldValue, newValue in
+            if newValue {
+                let panel = NSOpenPanel()
+                panel.allowsMultipleSelection = false
+                panel.canChooseDirectories = false
+                panel.canChooseFiles = true
+                panel.allowedContentTypes = [UTType.application]
+                panel.message = "Select the application to open the document"
+                if panel.runModal() == .OK, let url = panel.url {
+                    if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
+                        viewModel.docApp = bundleId
+                        viewModel.docAppName = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? url.deletingPathExtension().lastPathComponent
+                    }
+                    // If no bundle id, do not set docApp or docAppName
+                }
+                viewModel.showAppOpenPanel = false
             }
         }
     }
@@ -140,38 +140,48 @@ struct AddDocumentDialogContent: View {
                             .font(.subheadline)
                             .fontWeight(.medium)
                             .foregroundColor(.secondary)
-                        
-                        TextField("e.g., com.apple.TextEdit", text: $viewModel.docApp)
-                            .textFieldStyle(.roundedBorder)
+
+                        HStack(spacing: 8) {
+                            Button(action: {
+                                viewModel.showAppOpenPanel = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "folder.badge.plus")
+                                        .font(.title3)
+                                    Text(viewModel.docApp.isEmpty ? "Choose Application..." : viewModel.docAppName)
+                                        .fontWeight(.medium)
+                                }
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.accentColor.opacity(0.1))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                            .scaleEffect(1.0)
+                            .animation(.easeInOut(duration: 0.1), value: true)
+
+                            if !viewModel.docApp.isEmpty {
+                                Button(action: {
+                                    viewModel.docApp = ""
+                                    viewModel.docAppName = ""
+                                }) {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.secondary)
+                                        .font(.title3)
+                                }
+                                .buttonStyle(.plain)
+                                .help("Clear selected application")
+                            }
+                        }
                     }
                 }
             }
-            
-            Spacer()
-        }
-    }
-    
-    private var openedTabContent: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(spacing: 20) {
-                Image(systemName: "doc.text.magnifyingglass")
-                    .font(.title)
-                    .foregroundColor(.secondary)
-                
-                VStack(spacing: 12) {
-                    Text("No opened documents detected")
-                        .font(.headline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.primary)
-                    
-                    Text("This feature will detect documents that are currently open in supported applications.")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .padding(.vertical, 40)
             
             Spacer()
         }
