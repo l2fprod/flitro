@@ -52,6 +52,10 @@ struct ContextSidebarView: View {
                     context.iconBackgroundColor = backgroundColorHex
                     context.iconForegroundColor = foregroundColorHex
                     contextManager.saveContexts()
+                },
+                onDeleteRequest: {
+                    selectedContextID = context.id
+                    showDeleteAlert = true
                 }
             )
             .contentShape(Rectangle())
@@ -141,9 +145,10 @@ struct ContextSidebarView: View {
             permissionsManager.checkPermissions()
         }
         .alert(isPresented: $showDeleteAlert) {
-            Alert(
+            let contextName = contextManager.contexts.first(where: { $0.id == selectedContextID })?.name ?? "this context"
+            return Alert(
                 title: Text("Delete Context"),
-                message: Text("Are you sure you want to delete this context?"),
+                message: Text("Are you sure you want to delete \(contextName)?"),
                 primaryButton: .destructive(Text("Delete")) {
                     if let id = selectedContextID, let context = contextManager.contexts.first(where: { $0.id == id }) {
                         contextManager.deleteContext(contextID: context.id)

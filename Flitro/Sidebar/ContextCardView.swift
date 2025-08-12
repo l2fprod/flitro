@@ -8,6 +8,7 @@ struct ContextCardView: View {
     @ObservedObject var context: Context
     let isSelected: Bool
     let onIconChange: (String?, String?, String?) -> Void
+    let onDeleteRequest: (() -> Void)? // Optional handler for delete request
     
     @State private var showIconSelector = false
     @State private var iconRotation: Double = 0
@@ -62,6 +63,10 @@ struct ContextCardView: View {
             .disabled(!contextManager.isActive(contextID: context.id))
             Button("Change Icon...") {
                 showIconSelector = true
+            }
+            Divider()
+            Button("Delete") {
+                onDeleteRequest?() // Use handler if provided
             }
         }
         .sheet(isPresented: $showIconSelector) {
