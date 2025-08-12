@@ -386,7 +386,7 @@ struct ContextButton: View {
         } else if isActive {
             return "Close"
         } else if isOptionPressed {
-            return "Close Others and Open"
+            return "Open"
         } else {
             return "Open"
         }
@@ -422,9 +422,9 @@ struct ContextButton: View {
         } else if isActive {
             return "Close this context"
         } else if isOptionPressed {
-            return "Close all active contexts and open this one (Replace All mode)"
+            return "Close all active contexts and open this one"
         } else {
-            return "Open this context (Additive mode)"
+            return "Open this context"
         }
     }
 
