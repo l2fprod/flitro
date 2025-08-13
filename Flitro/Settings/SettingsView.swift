@@ -19,16 +19,16 @@ struct SettingsView: View {
             Toggle(isOn: $startAtLogin) {
                 Text("Start Flitro at login")
             }
-            .onChange(of: startAtLogin) { newValue, _ in
+            .onChange(of: startAtLogin) { _, newValue in
                 setLaunchAtLogin(enabled: newValue)
             }
             Toggle("Automatically check for updates", isOn: $automaticallyChecksForUpdates)
-                .onChange(of: automaticallyChecksForUpdates) { newValue, _ in
+                .onChange(of: automaticallyChecksForUpdates) { _, newValue in
                     updater.automaticallyChecksForUpdates = newValue
                 }
             Toggle("Automatically download updates", isOn: $automaticallyDownloadsUpdates)
                 .disabled(!automaticallyChecksForUpdates)
-                .onChange(of: automaticallyDownloadsUpdates) { newValue, _ in
+                .onChange(of: automaticallyDownloadsUpdates) { _, newValue in
                     updater.automaticallyDownloadsUpdates = newValue
                 }
         }
