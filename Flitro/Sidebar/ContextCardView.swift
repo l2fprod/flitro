@@ -7,10 +7,9 @@ import Foundation
 struct ContextCardView: View {
     @ObservedObject var context: Context
     let isSelected: Bool
-    let onIconChange: (String?, String?, String?) -> Void
-    let onDeleteRequest: (() -> Void)? // Optional handler for delete request
     
     @State private var showIconSelector = false
+    @State private var showDeleteAlert = false
     @State private var iconRotation: Double = 0
     @State private var cardScale: CGFloat = 1.0
     @EnvironmentObject private var contextManager: ContextManager
@@ -32,6 +31,7 @@ struct ContextCardView: View {
                 animate: true,
                 rotation: iconRotation
             )
+            .scaleEffect(cardScale)
             VStack(alignment: .leading, spacing: 2) {
                 Text(context.name)
                     .font(.system(size: 16, weight: isSelected ? .semibold : .regular))
@@ -47,10 +47,17 @@ struct ContextCardView: View {
                 Text(itemCountText)
                     .font(.footnote)
             }
+            // // Dot indicator at top right
+            VStack(alignment: .trailing, spacing: 0) {
+                Circle()
+                    .fill(isActive ? Color("ActiveContextColor") : Color.clear)
+                    .frame(width: 8, height: 8)
+                Spacer()
+            }
+            .frame(height: 32) // Adjust to match row/icon height
         }
         .padding(8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .scaleEffect(cardScale)
         .animation(.spring(response: 0.5, dampingFraction: 0.7), value: cardScale)
         .contextMenu {
             Button("Open") {
@@ -66,7 +73,11 @@ struct ContextCardView: View {
             }
             Divider()
             Button("Delete") {
-                onDeleteRequest?() // Use handler if provided
+                if context.items.isEmpty {
+                    contextManager.deleteContext(contextID: context.id)
+                } else {
+                    showDeleteAlert = true
+                }
             }
         }
         .sheet(isPresented: $showIconSelector) {
@@ -75,7 +86,11 @@ struct ContextCardView: View {
                 selectedIconBackgroundColor: context.iconBackgroundColor,
                 selectedIconForegroundColor: context.iconForegroundColor,
                 onSelect: { iconName, backgroundColorHex, foregroundColorHex in
-                    onIconChange(iconName, backgroundColorHex, foregroundColorHex)
+                    // Update the context directly and persist
+                    context.iconName = iconName
+                    context.iconBackgroundColor = backgroundColorHex
+                    context.iconForegroundColor = foregroundColorHex
+                    contextManager.saveContexts()
                     showIconSelector = false
                 },
                 onCancel: {
@@ -83,14 +98,44 @@ struct ContextCardView: View {
                 }
             )
         }
+        .alert(isPresented: $showDeleteAlert) {
+            Alert(
+                title: Text("Delete Context"),
+                message: Text("Are you sure you want to delete \(context.name)?"),
+                primaryButton: .destructive(Text("Delete")) {
+                    contextManager.deleteContext(contextID: context.id)
+                },
+                secondaryButton: .cancel()
+            )
+        }
         .onChange(of: isActive) { _, newValue in
             if newValue {
                 iconRotation = 360
-                cardScale = 1.04
+                cardScale = 1.5
             } else {
                 iconRotation = 0
                 cardScale = 1.0
             }
         }
+        .contentShape(Rectangle())
+        .tag(context.id as UUID?)
+        .help(analyticsTooltip(for: context.id))
+    }
+
+    private func analyticsTooltip(for contextID: UUID) -> String {
+        let analyticsManager = contextManager.analyticsManager
+        let openCount = analyticsManager.getOpenCount(for: contextID)
+        let lastOpen = analyticsManager.getLastOpenEvents(for: contextID).last
+        let lastClose = analyticsManager.getLastCloseEvents(for: contextID).last
+        let relativeFormatter = RelativeDateTimeFormatter()
+        relativeFormatter.unitsStyle = .full
+        var tooltip = "Opens: \(openCount)"
+        if let lastOpen = lastOpen {
+            tooltip += "\nLast opened: " + relativeFormatter.localizedString(for: lastOpen, relativeTo: Date())
+        }
+        if let lastClose = lastClose {
+            tooltip += "\nLast closed: " + relativeFormatter.localizedString(for: lastClose, relativeTo: Date())
+        }
+        return tooltip
     }
 }

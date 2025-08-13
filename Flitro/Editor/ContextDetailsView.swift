@@ -60,7 +60,7 @@ struct ContextItemRow: View {
             Divider()
             if let onDelete = onDelete {
                 Button(role: .destructive, action: onDelete) {
-                    Label("Delete", systemImage: "trash")
+                    Label("Remove", systemImage: "trash")
                 }
             }
         }

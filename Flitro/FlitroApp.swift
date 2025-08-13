@@ -6,6 +6,8 @@ import Sparkle
 // MARK: - App Delegate for Window Reopen and Hide-on-Close
 class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var updaterController: SPUStandardUpdaterController?
+    // Custom status bar controller with rich popover
+    var statusBarController: StatusBarController?
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         showMainWindow()
@@ -20,6 +22,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }) {
             window.delegate = self
         }
+        // Initialize the custom status bar
+        statusBarController = StatusBarController()
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {
@@ -95,10 +99,6 @@ struct FlitroApp: App {
             }
             SingleWindowCommands()
         }
-        MenuBarExtra("Flitro", systemImage: "rectangle.3.offgrid") {
-            MenuBarExtraContents(updater: appDelegate.updaterController?.updater)
-                .environmentObject(ContextManager.shared)
-        }
         Settings {
             if let updater = appDelegate.updaterController?.updater {
                 SettingsView(updater: updater)
@@ -145,51 +145,5 @@ struct SingleWindowCommands: Commands {
             }
             .keyboardShortcut("0", modifiers: [.command])
         }
-    }
-}
-
-struct MenuBarExtraContents: View {
-    @EnvironmentObject var contextManager: ContextManager
-    @Environment(\.openSettings) private var openSettings
-    let updater: SPUUpdater?
-
-    var body: some View {
-        ForEach(contextManager.contexts, id: \.reactiveId) { context in
-            Menu {
-                Button("Open") {
-                    contextManager.openContext(contextID: context.id)
-                }
-                Divider()
-                Button("Close") {
-                    contextManager.closeContext(contextID: context.id)
-                }
-            } label: {
-                HStack {
-                    if let iconName = context.iconName, let icon = Ph(rawValue: iconName) {
-                        icon.regular
-                            .font(.system(size: 20))
-                    } else {
-                        Image(systemName: "folder")
-                            .font(.system(size: 20))
-                    }
-                    Text(context.name)
-                }
-            }
-        }
-        if !contextManager.contexts.isEmpty {
-            Divider()
-        }
-        Button("Show Flitro") {
-            showMainWindow()
-        }
-        Divider()
-        Button("Check for Updates...") {
-            updater?.checkForUpdates()
-        }
-        Button("Settings") {
-            openSettings()
-        }
-        Divider()
-        Button("Quit") { NSApp.terminate(nil) }
     }
 }

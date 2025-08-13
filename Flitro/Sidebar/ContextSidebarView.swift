@@ -25,8 +25,13 @@ struct ContextSidebarView: View {
             .buttonStyle(.plain)
             .help("Add Context")
             Button(action: {
-                if selectedContextID != nil {
-                    showDeleteAlert = true
+                if let id = selectedContextID, let ctx = contextManager.contexts.first(where: { $0.id == id }) {
+                    if ctx.items.isEmpty {
+                        contextManager.deleteContext(contextID: id)
+                        selectedContextID = nil
+                    } else {
+                        showDeleteAlert = true
+                    }
                 }
             }) {
                 Image(systemName: "minus.circle.fill")
@@ -42,67 +47,20 @@ struct ContextSidebarView: View {
     }
     
     private func contextRow(for context: Context) -> some View {
-        HStack(spacing: 0) {
-            // Main content
-            ContextCardView(
-                context: context,
-                isSelected: context.id == selectedContextID,
-                onIconChange: { iconName, backgroundColorHex, foregroundColorHex in
-                    context.iconName = iconName
-                    context.iconBackgroundColor = backgroundColorHex
-                    context.iconForegroundColor = foregroundColorHex
-                    contextManager.saveContexts()
-                },
-                onDeleteRequest: {
-                    selectedContextID = context.id
-                    showDeleteAlert = true
-                }
-            )
-            .contentShape(Rectangle())
-            .tag(context.id as UUID?)
-            .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
-                UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: context.id)
-            }
-            Spacer(minLength: 0)
-            // Dot indicator at top right
-            VStack(alignment: .trailing, spacing: 0) {
-                Circle()
-                    .fill(
-                        contextManager.isActive(contextID: context.id)
-                            ? Color("ActiveContextColor")
-                            : Color.clear
-                    )
-                    .frame(width: 8, height: 8)
-                    .padding(.top, -4) // Adjust as needed for icon alignment
-                Spacer()
-            }
-            .frame(height: 32) // Adjust to match row/icon height
-            .padding(.trailing, 8)
+        // Main content
+        ContextCardView(
+            context: context,
+            isSelected: context.id == selectedContextID
+        )
+        .onDrop(of: UniversalDropHandler.allDropTypes, isTargeted: nil) { providers in
+            UniversalDropHandler.handleUniversalDrop(providers: providers, contextManager: contextManager, selectedContextID: context.id)
         }
         .overlay(
             RoundedRectangle(cornerRadius: 6)
                 .stroke(Color.gray.opacity(0.15), lineWidth: context.id == selectedContextID ? 0 : 1)
         )
-        .help(analyticsTooltip(for: context.id))
     }
-    
-    private func analyticsTooltip(for contextID: UUID) -> String {
-        let analyticsManager = contextManager.analyticsManager
-        let openCount = analyticsManager.getOpenCount(for: contextID)
-        let lastOpen = analyticsManager.getLastOpenEvents(for: contextID).last
-        let lastClose = analyticsManager.getLastCloseEvents(for: contextID).last
-        let relativeFormatter = RelativeDateTimeFormatter()
-        relativeFormatter.unitsStyle = .full
-        var tooltip = "Opens: \(openCount)"
-        if let lastOpen = lastOpen {
-            tooltip += "\nLast opened: " + relativeFormatter.localizedString(for: lastOpen, relativeTo: Date())
-        }
-        if let lastClose = lastClose {
-            tooltip += "\nLast closed: " + relativeFormatter.localizedString(for: lastClose, relativeTo: Date())
-        }
-        return tooltip
-    }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             headerView
