@@ -120,10 +120,24 @@ struct ContextDetailsView: View {
     
     @State private var isEditingTitle = false
     @State private var draftTitle = ""
+    // New: clearer editing/hover/focus states for the title
+    @State private var isHoveringTitle = false
+    @FocusState private var titleFieldFocused: Bool
     
     // New: Editing state for context items
     @State private var editingItemIndex: EditingIndex? = nil
     
+    // Force toolbar relayout when the context or title size category changes
+    private var principalLayoutID: String {
+        if isEditingTitle {
+            // Important: do not depend on draftTitle length while editing to avoid TextField resets
+            return "\(context.id)-e"
+        } else {
+            let bucket = max(1, min(8, context.name.count / 12)) // coarse buckets to reduce churn
+            return "\(context.id)-v-\(bucket)"
+        }
+    }
+
     var body: some View {
         ZStack {
             VStack(spacing: 0) {
@@ -271,31 +285,94 @@ struct ContextDetailsView: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .navigation) {
+            // Make the title occupy the principal (expandable) area of the toolbar
+            ToolbarItem(placement: .principal) {
                 if isEditingTitle {
-                    TextField("Context Name", text: $draftTitle, onCommit: {
-                        isEditingTitle = false
-                        let trimmed = draftTitle.trimmingCharacters(in: .whitespaces)
-                        if !trimmed.isEmpty && trimmed != context.name {
-                            context.name = trimmed
-                            contextManager.saveContexts()
+                    HStack(spacing: 8) {
+                        TextField("Context Name", text: $draftTitle, onCommit: { commitTitle() })
+                            .font(.system(size: 17, weight: .bold))
+                            .textFieldStyle(PlainTextFieldStyle())
+                            .focused($titleFieldFocused)
+                            .onAppear {
+                                // Focus the field when entering edit mode; draftTitle is set when toggling edit mode
+                                DispatchQueue.main.async { self.titleFieldFocused = true }
+                            }
+                            .onExitCommand { cancelEditTitle() }
+                            .lineLimit(1)
+                            .allowsTightening(true)
+                            .minimumScaleFactor(0.5)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        // Quick actions for explicit save/cancel
+                        Button { commitTitle() } label: {
+                            Image(systemName: "checkmark.circle.fill").foregroundColor(.accentColor)
                         }
-                    })
-                    .font(.system(size: 17, weight: .bold))
-                    .textFieldStyle(PlainTextFieldStyle())
-                    .frame(minWidth: 120, maxWidth: 200)
-                    .onAppear { draftTitle = context.name }
-                    .onExitCommand { isEditingTitle = false }
+                        .buttonStyle(.plain)
+                        .help("Save title")
+                        Button { cancelEditTitle() } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundColor(.secondary)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Cancel editing")
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(NSColor.textBackgroundColor))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.accentColor.opacity(0.6), lineWidth: 1)
+                    )
+                    // Allow the title editor to expand across available toolbar space
+                    .frame(minWidth: 140, maxWidth: .infinity, alignment: .leading)
+                    // Keep stable id logic
+                    .id(principalLayoutID)
                 } else {
-                    Text(context.name)
-                        .font(.system(size: 17, weight: .bold))
-                        .onTapGesture {
-                            draftTitle = context.name
-                            isEditingTitle = true
-                        }
+                    HStack(spacing: 6) {
+                        Text(context.name)
+                            .font(.system(size: 17, weight: .bold))
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+                            .allowsTightening(true)
+                            .minimumScaleFactor(0.5)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                draftTitle = context.name
+                                isEditingTitle = true
+                            }
+                        // Reserve space for the pencil to avoid layout shifts and only fade it
+                        Image(systemName: "pencil")
+                            .font(.system(size: 13))
+                            .foregroundColor(.secondary)
+                            .opacity(isHoveringTitle ? 1 : 0)
+                            .frame(width: 16, height: 16)
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isHoveringTitle ? Color.accentColor.opacity(0.08) : Color.clear)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isHoveringTitle ? Color.accentColor.opacity(0.25) : Color.clear, lineWidth: 1)
+                    )
+                    // Allow the title to expand across available toolbar space
+                    .frame(minWidth: 140, maxWidth: .infinity, alignment: .leading)
+                    .onHover { hovering in
+                        isHoveringTitle = hovering
+                    }
+                    .help("Click to rename")
+                    .id(principalLayoutID)
                 }
             }
-            ToolbarItemGroup(placement: .automatic) {
+            // Ensure action buttons stay on the trailing edge
+            ToolbarItemGroup(placement: .primaryAction) {
                 // Add dropdown menu for adding items (unchanged)
                 Menu {
                     Button("Application", action: { showAddAppDialog = true })
@@ -303,17 +380,13 @@ struct ContextDetailsView: View {
                     Button("Browser Tab", action: { showAddBrowserTabDialog = true })
                     Button("Shell Script", action: { showAddTerminalDialog = true })
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "plus")
-                        Text("Add")
-                    }
-                    .font(.system(size: 16, weight: .medium))
+                    // HStack(spacing: 6) {
+                    Image(systemName: "plus")
+                    //     Text("Add")
+                    // }
+                    // .font(.system(size: 16, weight: .medium))
                     .help("Add Item")
                 }
-                Rectangle()
-                    .frame(width: 1, height: 24)
-                    .foregroundColor(Color.gray.opacity(0.3))
-                    .padding(.horizontal, 4)
                 // Single context button
                 ContextButton(context: context, contextManager: contextManager)
             }
@@ -342,6 +415,24 @@ struct ContextDetailsView: View {
         )
         .listRowInsets(EdgeInsets())
         .background(Color.clear)
+    }
+    
+    // MARK: - Title helpers
+    private func commitTitle() {
+        isEditingTitle = false
+        let trimmed = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty && trimmed != context.name {
+            context.name = trimmed
+            contextManager.saveContexts()
+        } else {
+            // Restore draft to the current name if unchanged
+            draftTitle = context.name
+        }
+    }
+    
+    private func cancelEditTitle() {
+        draftTitle = context.name
+        isEditingTitle = false
     }
 }
 
