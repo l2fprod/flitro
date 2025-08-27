@@ -268,15 +268,6 @@ struct ContextDetailsView: View {
             }
         }
         .toolbar {
-            // Invisible, flexible item claims the center (principal) space
-            ToolbarItem(placement: .principal) {
-                Color.clear.frame(maxWidth: .infinity)
-            }
-            // Title anchored on the very left (navigation area), allowed to expand
-            ToolbarItem(placement: .navigation) {
-                ContextTitleView(context: context, contextManager: contextManager)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
             // Trailing actions stay on the right
             ToolbarItemGroup(placement: .primaryAction) {
                 // Add dropdown menu for adding items (unchanged)
@@ -293,10 +284,7 @@ struct ContextDetailsView: View {
                 ContextButton(context: context, contextManager: contextManager)
             }
         }
-        .navigationTitle("")
-        .onChange(of: context.id) { _, _ in
-            // Title editing state now managed by ContextTitleView
-        }
+        .navigationTitle(context.name)
     }
     
     private func onOpenAction(for item: ContextItem, contextIdx: Int) -> (() -> Void)? {
