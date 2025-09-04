@@ -127,9 +127,9 @@ func showMainWindow() {
         String(describing: type(of: $0)) != "NSStatusBarWindow" &&
         $0.level == .normal
     }) {
-        if !window.isVisible {
-            window.orderFrontRegardless()
-        }
+        // Bring the window to the front
+        window.orderFrontRegardless()
+        // Make it the key window
         window.makeKeyAndOrderFront(nil)
     }
 }
