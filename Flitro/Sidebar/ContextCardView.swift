@@ -141,7 +141,7 @@ struct ContextCardView: View {
         .onChange(of: isActive) { _, newValue in
             if newValue {
                 iconRotation = 360
-                cardScale = 1.5
+                cardScale = 1.2
             } else {
                 iconRotation = 0
                 cardScale = 1.0
