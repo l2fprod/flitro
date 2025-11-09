@@ -27,7 +27,7 @@ jobs:
       - name: Set up Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 'latest-stable'
+          xcode-version: '16.4.0'
 
       - name: Build and Notarize
         id: build_and_notarize
