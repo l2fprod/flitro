@@ -16,9 +16,22 @@ class AddBrowserTabDialogViewModel: ObservableObject {
     
     func createBrowserTab() -> BrowserTab {
         let browser = selectedBrowser == "Default" ? "default" : selectedBrowser
+        
+        // Normalize the URL
+        let normalizedURL: String
+        if tabURL.contains("://") {
+            normalizedURL = tabURL
+        } else if tabURL.hasPrefix("/") {
+            // Local file path
+            normalizedURL = URL(fileURLWithPath: tabURL).absoluteString
+        } else {
+            // Assume https for other cases
+            normalizedURL = "https://" + tabURL
+        }
+        
         return BrowserTab(
             title: tabTitle.isEmpty ? tabURL : tabTitle,
-            url: tabURL,
+            url: normalizedURL,
             browser: browser
         )
     }

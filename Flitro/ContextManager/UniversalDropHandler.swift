@@ -83,6 +83,8 @@ struct UniversalDropHandler {
             processShellScriptFile(url: url, contextManager: contextManager, contextIndex: contextIndex)
         } else if url.pathExtension == "webloc" {
             processWeblocFile(url: url, contextManager: contextManager, contextIndex: contextIndex)
+        } else if ["html", "htm", "xhtml"].contains(url.pathExtension.lowercased()) {
+            processWebFile(url: url, contextManager: contextManager, contextIndex: contextIndex)
         } else {
             processGenericDocumentFile(url: url, contextManager: contextManager, contextIndex: contextIndex)
         }
@@ -117,6 +119,12 @@ struct UniversalDropHandler {
         } else {
             print("Failed to extract URL from .webloc file: \(url)")
         }
+    }
+
+    private static func processWebFile(url: URL, contextManager: ContextManager, contextIndex: Int) {
+        let browserTab = BrowserTab(title: url.lastPathComponent, url: url.absoluteString, browser: "default")
+        contextManager.addItem(.browserTab(browserTab), to: contextManager.contexts[contextIndex].id)
+        print("Added browser tab for web file: \(browserTab.title)")
     }
 
     private static func processGenericDocumentFile(url: URL, contextManager: ContextManager, contextIndex: Int) {
