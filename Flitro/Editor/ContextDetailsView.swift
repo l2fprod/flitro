@@ -319,16 +319,11 @@ struct ContextButton: View {
                 Image(systemName: buttonIcon)
                 Text(buttonText)
             }
-            .font(.system(size: 14, weight: .medium))
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(
-                Capsule().fill(buttonBackgroundColor)
-            )
             .foregroundColor(.white)
         }
+        .background(buttonBackgroundColor)
+        .clipShape(Capsule())
         .focusEffectDisabled()
-        .buttonStyle(.plain)
         .help(buttonHelpText)
         .onReceive(Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()) { _ in
             // Only track Option key when window is active
