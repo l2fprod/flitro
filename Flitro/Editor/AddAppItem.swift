@@ -89,24 +89,31 @@ struct AddAppDialogContent: View {
             }
             .animation(.easeInOut(duration: 0.3), value: viewModel.selectedTab)
         }
-        .onChange(of: viewModel.showOpenPanel) { oldValue, newValue in
+        .onChange(of: viewModel.showOpenPanel) { _, newValue in
             if newValue {
                 let panel = NSOpenPanel()
                 panel.allowedContentTypes = [UTType.application]
                 panel.allowsMultipleSelection = false
                 panel.canChooseDirectories = false
                 panel.canChooseFiles = true
-                if panel.runModal() == .OK, let url = panel.url {
-                    if let bundle = Bundle(url: url),
-                       let bundleId = bundle.bundleIdentifier {
-                        viewModel.browseAppName = url.deletingPathExtension().lastPathComponent
-                        viewModel.browseBundle = bundleId
-                    } else {
-                        viewModel.browseAppName = url.deletingPathExtension().lastPathComponent
-                        viewModel.browseBundle = ""
+                panel.begin { response in
+                    if response == .OK, let url = panel.url {
+                        if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
+                            DispatchQueue.main.async {
+                                viewModel.browseAppName = url.deletingPathExtension().lastPathComponent
+                                viewModel.browseBundle = bundleId
+                            }
+                        } else {
+                            DispatchQueue.main.async {
+                                viewModel.browseAppName = url.deletingPathExtension().lastPathComponent
+                                viewModel.browseBundle = ""
+                            }
+                        }
+                    }
+                    DispatchQueue.main.async {
+                        viewModel.showOpenPanel = false
                     }
                 }
-                viewModel.showOpenPanel = false
             }
         }
     }

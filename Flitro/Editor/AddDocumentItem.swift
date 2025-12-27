@@ -43,25 +43,31 @@ struct AddDocumentDialogContent: View {
         VStack(alignment: .leading, spacing: 0) {
             browseTabContent
         }
-        .onChange(of: viewModel.showOpenPanel) { oldValue, newValue in
+        .onChange(of: viewModel.showOpenPanel) { _, newValue in
             if newValue {
                 let panel = NSOpenPanel()
                 panel.allowsMultipleSelection = false
                 panel.canChooseDirectories = false
                 panel.canChooseFiles = true
-                if panel.runModal() == .OK, let url = panel.url {
-                    viewModel.docName = url.deletingPathExtension().lastPathComponent
-                    viewModel.docPath = url.path
-                    do {
-                        viewModel.bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
-                    } catch {
-                        viewModel.bookmark = nil
+                panel.begin { response in
+                    if response == .OK, let url = panel.url {
+                        DispatchQueue.main.async {
+                            viewModel.docName = url.deletingPathExtension().lastPathComponent
+                            viewModel.docPath = url.path
+                            do {
+                                viewModel.bookmark = try url.bookmarkData(options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
+                            } catch {
+                                viewModel.bookmark = nil
+                            }
+                        }
+                    }
+                    DispatchQueue.main.async {
+                        viewModel.showOpenPanel = false
                     }
                 }
-                viewModel.showOpenPanel = false
             }
         }
-        .onChange(of: viewModel.showAppOpenPanel) { oldValue, newValue in
+        .onChange(of: viewModel.showAppOpenPanel) { _, newValue in
             if newValue {
                 let panel = NSOpenPanel()
                 panel.allowsMultipleSelection = false
@@ -69,14 +75,19 @@ struct AddDocumentDialogContent: View {
                 panel.canChooseFiles = true
                 panel.allowedContentTypes = [UTType.application]
                 panel.message = "Select the application to open the document"
-                if panel.runModal() == .OK, let url = panel.url {
-                    if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
-                        viewModel.docApp = bundleId
-                        viewModel.docAppName = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? url.deletingPathExtension().lastPathComponent
+                panel.begin { response in
+                    if response == .OK, let url = panel.url {
+                        if let bundle = Bundle(url: url), let bundleId = bundle.bundleIdentifier {
+                            DispatchQueue.main.async {
+                                viewModel.docApp = bundleId
+                                viewModel.docAppName = bundle.object(forInfoDictionaryKey: "CFBundleName") as? String ?? url.deletingPathExtension().lastPathComponent
+                            }
+                        }
                     }
-                    // If no bundle id, do not set docApp or docAppName
+                    DispatchQueue.main.async {
+                        viewModel.showAppOpenPanel = false
+                    }
                 }
-                viewModel.showAppOpenPanel = false
             }
         }
     }

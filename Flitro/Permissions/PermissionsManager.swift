@@ -74,20 +74,33 @@ class PermissionsManager: ObservableObject {
         alert.addButton(withTitle: "Open Settings")
         alert.addButton(withTitle: "Cancel")
 
-        let response = alert.runModal()
-
-        switch response {
-        case .alertFirstButtonReturn:
-            // Test Permissions
-            if !hasAccessibilityPermission {
-                requestAccessibilityPermission()
+        DispatchQueue.main.async {
+            if let window = NSApp.keyWindow ?? NSApp.windows.first {
+                alert.beginSheetModal(for: window) { response in
+                    switch response {
+                    case .alertFirstButtonReturn:
+                        if !self.hasAccessibilityPermission {
+                            self.requestAccessibilityPermission()
+                        }
+                    case .alertSecondButtonReturn:
+                        self.openSystemPreferences()
+                    default:
+                        break
+                    }
+                }
+            } else {
+                let response = alert.runModal()
+                switch response {
+                case .alertFirstButtonReturn:
+                    if !self.hasAccessibilityPermission {
+                        self.requestAccessibilityPermission()
+                    }
+                case .alertSecondButtonReturn:
+                    self.openSystemPreferences()
+                default:
+                    break
+                }
             }
-        case .alertSecondButtonReturn:
-            // Open Settings
-            openSystemPreferences()
-        default:
-            // Cancel - do nothing
-            break
         }
     }
     

@@ -182,10 +182,16 @@ struct AddTerminalDialogContent: View {
                 panel.canChooseDirectories = true
                 panel.canChooseFiles = false
                 panel.allowsMultipleSelection = false
-                if panel.runModal() == .OK, let url = panel.url {
-                    viewModel.workingDirectory = url.path
+                panel.begin { response in
+                    if response == .OK, let url = panel.url {
+                        DispatchQueue.main.async {
+                            viewModel.workingDirectory = url.path
+                        }
+                    }
+                    DispatchQueue.main.async {
+                        viewModel.showDirectoryPicker = false
+                    }
                 }
-                viewModel.showDirectoryPicker = false
             }
         }
     }

@@ -248,6 +248,11 @@ class ContextManager: ObservableObject {
 
     /// Create the appropriate launcher for a given bundleId and items
     private func launcher(for bundleId: String, items: [ContextItem]) -> ContextApplicationLauncher {
+        // If there's only one item and it's an AppItem for this bundle, prefer the default launcher
+        if items.count == 1, case .application(let app) = items[0], app.bundleIdentifier == bundleId {
+            return DefaultApplicationLauncher(bundleIdentifier: bundleId, items: items)
+        }
+
         switch bundleId {
         case "com.google.Chrome":
             return ChromeApplicationLauncher(items: items)
