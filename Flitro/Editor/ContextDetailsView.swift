@@ -28,8 +28,12 @@ struct ContextItemRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(.system(size: 15, weight: .medium))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 if let subtitle = subtitle {
                     Text(subtitle)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
