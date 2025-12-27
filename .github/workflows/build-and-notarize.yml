@@ -12,6 +12,10 @@ on:
       - '.github/workflows/build-and-notarize.sh'
       - '.github/workflows/build-and-notarize.yml'
 
+permissions:
+  contents: write
+  pages: write
+
 jobs:
   build-and-notarize:
     runs-on: macos-15
