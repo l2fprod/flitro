@@ -60,16 +60,19 @@ private struct ContextPickerPopoverView: View {
                 Button(action: { showMainWindow() }) {
                     Image(systemName: "rectangle.and.text.magnifyingglass")
                 }
+                .focusEffectDisabled()
                 .buttonStyle(HeaderIconButtonStyle())
                 .help("Show Flitro")
                 Button(action: { openSettings() }) {
                     Image(systemName: "gearshape")
                 }
+                .focusEffectDisabled()
                 .buttonStyle(HeaderIconButtonStyle())
                 .help("Settings")
                 Button(action: { NSApp.terminate(nil) }) {
                     Image(systemName: "power")
                 }
+                .focusEffectDisabled()
                 .buttonStyle(HeaderIconButtonStyle())
                 .help("Quit")
             }
@@ -124,7 +127,7 @@ private struct HeaderIconButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size: 15, weight: .light))
-                .foregroundColor((isHovering || configuration.isPressed) ? .accentColor : Color.secondary)
+                    .foregroundColor((isHovering || configuration.isPressed) ? .accentColor : Color.secondary)
                 .contentShape(Rectangle())
                 .onHover { isHovering = $0 }
         }
